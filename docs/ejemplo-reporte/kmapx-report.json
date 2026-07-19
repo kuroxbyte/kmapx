@@ -1,0 +1,167 @@
+{
+  "schema": 1,
+  "module": "integration-tests",
+  "mappings": [
+    {
+      "source": "dev.kmapx.it.Address", "target": "dev.kmapx.it.AddressDto",
+      "mode": "extension", "function": "toAddressDto",
+      "file": "Sample.kt", "line": 48,
+      "fields": [{"target": "city", "from": "city", "origin": "IMPLICIT_SAFE", "shape": "direct"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.ArticlePatch", "target": "dev.kmapx.it.Article",
+      "mode": "patch", "function": "apply",
+      "file": "Sample.kt", "line": 107,
+      "fields": [{"target": "title", "from": "title", "origin": "IMPLICIT_SAFE", "shape": "direct", "fallbackToTarget": true}, {"target": "tags", "from": "tags", "origin": "IMPLICIT_SAFE", "shape": "direct", "fallbackToTarget": true}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.BranchSrc", "target": "dev.kmapx.it.BranchDto",
+      "mode": "extension", "function": "toBranchDto",
+      "file": "Sample.kt", "line": 163,
+      "fields": [{"target": "city", "from": "address?.city", "origin": "IMPLICIT_SAFE", "shape": "direct"}, {"target": "name", "from": "name", "origin": "IMPLICIT_SAFE", "shape": "direct"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Contact", "target": "dev.kmapx.it.ContactDto",
+      "mode": "extension", "function": "toContactDto",
+      "file": "Sample.kt", "line": 97,
+      "fields": [{"target": "email", "from": "email", "origin": "IMPLICIT_SAFE", "shape": "wrap"}, {"target": "alias", "from": "alias", "origin": "IMPLICIT_SAFE", "shape": "unwrap"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Directory", "target": "dev.kmapx.it.DirectoryDto",
+      "mode": "extension", "function": "toDirectoryDto",
+      "file": "Sample.kt", "line": 53,
+      "fields": [{"target": "addresses", "from": "addresses", "origin": "DECLARED_MAPTO", "shape": "map-elements(mapper)", "ref": "dev.kmapx.it.toAddressDto"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Handle", "target": "dev.kmapx.it.HandleDto",
+      "mode": "extension", "function": "toHandleDto",
+      "file": "Sample.kt", "line": 74,
+      "fields": [{"target": "name", "from": "name", "origin": "IMPLICIT_SAFE", "shape": "direct"}, {"target": "nickname", "from": "nickname", "origin": "IMPLICIT_SAFE", "shape": "target-default"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Inventory", "target": "dev.kmapx.it.InventoryDto",
+      "mode": "extension", "function": "toInventoryDto",
+      "file": "Sample.kt", "line": 139,
+      "fields": [{"target": "stock", "from": "stock", "origin": "IMPLICIT_SAFE", "shape": "map-entries(value=mapper)"}, {"target": "checkpoints", "from": "checkpoints", "origin": "DECLARED_MAPTO", "shape": "map-elements(mapper)", "ref": "dev.kmapx.it.toAddressDto"}, {"target": "lastSync", "from": "lastSync", "origin": "DECLARED_MAPTO", "shape": "map-elements(mapper)", "ref": "dev.kmapx.it.toAddressDto"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Level", "target": "dev.kmapx.it.LevelDto",
+      "mode": "extension", "function": "toLevelDto",
+      "file": "Sample.kt", "line": 123,
+      "fields": [],
+      "unusedSourceProperties": ["entries"],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.OrderEvent", "target": "dev.kmapx.it.OrderEventDto",
+      "mode": "extension", "function": "toOrderEventDto",
+      "file": "Sample.kt", "line": 83,
+      "fields": [],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Person", "target": "dev.kmapx.it.PersonSummary",
+      "mode": "extension", "function": "asSummary",
+      "file": "Sample.kt", "line": 19,
+      "fields": [{"target": "name", "from": "name", "origin": "IMPLICIT_SAFE", "shape": "direct"}],
+      "unusedSourceProperties": ["age"],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Person", "target": "dev.kmapx.it.PersonDto",
+      "mode": "interface", "function": "toDto",
+      "file": "Sample.kt", "line": 31,
+      "delegatesTo": "dev.kmapx.it.toPersonDto",
+      "fields": [],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Person", "target": "dev.kmapx.it.PersonDto",
+      "mode": "extension", "function": "toPersonDto",
+      "file": "Sample.kt", "line": 19,
+      "fields": [{"target": "name", "from": "name", "origin": "IMPLICIT_SAFE", "shape": "direct"}, {"target": "age", "from": "age", "origin": "IMPLICIT_SAFE", "shape": "direct"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Profile", "target": "dev.kmapx.it.ProfileDto",
+      "mode": "extension", "function": "toProfileDto",
+      "file": "Sample.kt", "line": 42,
+      "fields": [{"target": "nickname", "from": "nickname", "origin": "IMPLICIT_SAFE", "shape": "fallback-value"}, {"target": "email", "from": "email", "origin": "IMPLICIT_SAFE", "shape": "or-throw"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Receipt", "target": "dev.kmapx.it.ReceiptDto",
+      "mode": "extension", "function": "toReceiptDto",
+      "file": "Sample.kt", "line": 62,
+      "fields": [{"target": "amount", "from": "amount", "origin": "USER_CONVERTER", "shape": "converter", "ref": "dev.kmapx.it.centsToAmount"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Shipment", "target": "dev.kmapx.it.ShipmentDto",
+      "mode": "extension", "function": "toShipmentDto",
+      "file": "Sample.kt", "line": 129,
+      "fields": [{"target": "code", "from": "code", "origin": "IMPLICIT_SAFE", "shape": "direct"}, {"target": "destination", "from": "destination", "origin": "DECLARED_MAPTO", "shape": "mapper", "ref": "dev.kmapx.it.toAddressDto"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.TaskSrc", "target": "dev.kmapx.it.TaskEntity",
+      "mode": "extension", "function": "toTaskEntity",
+      "file": "Sample.kt", "line": 27,
+      "fields": [{"target": "id", "from": "id", "origin": "IMPLICIT_SAFE", "shape": "direct"}, {"target": "status", "from": "status", "origin": "IMPLICIT_SAFE", "shape": "direct"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.TicketSrc", "target": "dev.kmapx.it.Ticket",
+      "mode": "extension", "function": "toTicket",
+      "file": "Sample.kt", "line": 117,
+      "fields": [{"target": "id", "from": "id", "origin": "IMPLICIT_SAFE", "shape": "direct"}, {"target": "state", "from": "state", "origin": "IMPLICIT_SAFE", "shape": "fallback-value"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.User", "target": "dev.kmapx.it.UserDto",
+      "mode": "extension", "function": "toUserDto",
+      "file": "Sample.kt", "line": 68,
+      "fields": [{"target": "name", "from": "firstname", "origin": "IMPLICIT_SAFE", "shape": "direct"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.Vehicle", "target": "dev.kmapx.it.VehicleDto",
+      "mode": "bidirectional", "function": "toVehicleDto",
+      "file": "Sample.kt", "line": 152,
+      "fields": [{"target": "plateNumber", "from": "plate", "origin": "IMPLICIT_SAFE", "shape": "unwrap"}, {"target": "year", "from": "year", "origin": "IMPLICIT_SAFE", "shape": "direct"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    },
+    {
+      "source": "dev.kmapx.it.VehicleDto", "target": "dev.kmapx.it.Vehicle",
+      "mode": "bidirectional", "function": "toVehicle",
+      "file": "Sample.kt", "line": 152,
+      "fields": [{"target": "plate", "from": "plateNumber", "origin": "IMPLICIT_SAFE", "shape": "wrap"}, {"target": "year", "from": "year", "origin": "IMPLICIT_SAFE", "shape": "direct"}],
+      "unusedSourceProperties": [],
+      "warnings": []
+    }
+  ]
+}

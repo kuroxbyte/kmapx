@@ -1,0 +1,45 @@
+site_name: kmapx
+site_description: "Mapper Kotlin-first en compile-time: todo mapeo inseguro es un error de compilación"
+repo_url: https://github.com/kuroxbyte/kmapx
+docs_dir: docs
+
+theme:
+  name: material
+  language: es
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      toggle: { icon: material/brightness-7, name: Modo oscuro }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      toggle: { icon: material/brightness-4, name: Modo claro }
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - tables
+  - toc:
+      permalink: true
+      # anclas unicode (como GitHub): así los #enlaces-con-acentos funcionan en ambos renderers
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds: { case: lower }
+
+nav:
+  - Inicio: index.md
+  - Guía de referencia: referencia.md
+  - Ejemplos avanzados (verificados): ejemplos-avanzados.md
+  - Diagnósticos (KMX001–045): referencia/diagnosticos.md
+  - Guías:
+      - Mapeo: guia-mapeo.md
+      - Kotlin Multiplatform: guia-kmp.md
+      - Desde MapStruct: guia-migracion-mapstruct.md
+      - Ejemplo end-to-end: kmapx-ejemplo-end-to-end.md
+      - Capacidades y limitaciones: capacidades-y-limitaciones.md

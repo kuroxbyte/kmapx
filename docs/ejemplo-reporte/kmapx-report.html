@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>kmapx coverage — integration-tests</title>
+<style>body{font-family:system-ui,sans-serif;margin:2rem;color:#222}table{border-collapse:collapse;margin:.5rem 0 2rem}td,th{border:1px solid #ccc;padding:.3rem .6rem;text-align:left;font-size:.9rem}th{background:#f5f5f5}.badge{padding:.1rem .4rem;border-radius:.3rem;font-size:.8rem}.USER_CONVERTER{background:#ffe8b3}.DECLARED_MAPTO{background:#cde8ff}.IMPLICIT_SAFE{background:#d8f5d0}.warn{color:#a15c00}</style></head><body>
+<h1>kmapx coverage — integration-tests</h1>
+<p>schema 1 · 20 mappings</p>
+<h2>dev.kmapx.it.Address → dev.kmapx.it.AddressDto <small>(extension · toAddressDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>city</td><td><code>city</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.ArticlePatch → dev.kmapx.it.Article <small>(patch · apply)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>title</td><td><code>title</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct ?: target</td><td>—</td></tr>
+<tr><td>tags</td><td><code>tags</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct ?: target</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.BranchSrc → dev.kmapx.it.BranchDto <small>(extension · toBranchDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>city</td><td><code>address?.city</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+<tr><td>name</td><td><code>name</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.Contact → dev.kmapx.it.ContactDto <small>(extension · toContactDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>email</td><td><code>email</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>wrap</td><td>—</td></tr>
+<tr><td>alias</td><td><code>alias</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>unwrap</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.Directory → dev.kmapx.it.DirectoryDto <small>(extension · toDirectoryDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>addresses</td><td><code>addresses</code></td><td><span class="badge DECLARED_MAPTO">DECLARED_MAPTO</span></td><td>map-elements(mapper)</td><td><code>dev.kmapx.it.toAddressDto</code></td></tr>
+</table>
+<h2>dev.kmapx.it.Handle → dev.kmapx.it.HandleDto <small>(extension · toHandleDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>name</td><td><code>name</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+<tr><td>nickname</td><td><code>nickname</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>target-default</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.Inventory → dev.kmapx.it.InventoryDto <small>(extension · toInventoryDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>stock</td><td><code>stock</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>map-entries(value=mapper)</td><td>—</td></tr>
+<tr><td>checkpoints</td><td><code>checkpoints</code></td><td><span class="badge DECLARED_MAPTO">DECLARED_MAPTO</span></td><td>map-elements(mapper)</td><td><code>dev.kmapx.it.toAddressDto</code></td></tr>
+<tr><td>lastSync</td><td><code>lastSync</code></td><td><span class="badge DECLARED_MAPTO">DECLARED_MAPTO</span></td><td>map-elements(mapper)</td><td><code>dev.kmapx.it.toAddressDto</code></td></tr>
+</table>
+<h2>dev.kmapx.it.Level → dev.kmapx.it.LevelDto <small>(extension · toLevelDto)</small></h2>
+<p>unused source properties: entries</p>
+<h2>dev.kmapx.it.OrderEvent → dev.kmapx.it.OrderEventDto <small>(extension · toOrderEventDto)</small></h2>
+<h2>dev.kmapx.it.Person → dev.kmapx.it.PersonSummary <small>(extension · asSummary)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>name</td><td><code>name</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+</table>
+<p>unused source properties: age</p>
+<h2>dev.kmapx.it.Person → dev.kmapx.it.PersonDto <small>(interface · toDto)</small></h2>
+<p>delegates to <code>dev.kmapx.it.toPersonDto</code></p>
+<h2>dev.kmapx.it.Person → dev.kmapx.it.PersonDto <small>(extension · toPersonDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>name</td><td><code>name</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+<tr><td>age</td><td><code>age</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.Profile → dev.kmapx.it.ProfileDto <small>(extension · toProfileDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>nickname</td><td><code>nickname</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>fallback-value</td><td>—</td></tr>
+<tr><td>email</td><td><code>email</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>or-throw</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.Receipt → dev.kmapx.it.ReceiptDto <small>(extension · toReceiptDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>amount</td><td><code>amount</code></td><td><span class="badge USER_CONVERTER">USER_CONVERTER</span></td><td>converter</td><td><code>dev.kmapx.it.centsToAmount</code></td></tr>
+</table>
+<h2>dev.kmapx.it.Shipment → dev.kmapx.it.ShipmentDto <small>(extension · toShipmentDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>code</td><td><code>code</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+<tr><td>destination</td><td><code>destination</code></td><td><span class="badge DECLARED_MAPTO">DECLARED_MAPTO</span></td><td>mapper</td><td><code>dev.kmapx.it.toAddressDto</code></td></tr>
+</table>
+<h2>dev.kmapx.it.TaskSrc → dev.kmapx.it.TaskEntity <small>(extension · toTaskEntity)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>id</td><td><code>id</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+<tr><td>status</td><td><code>status</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.TicketSrc → dev.kmapx.it.Ticket <small>(extension · toTicket)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>id</td><td><code>id</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+<tr><td>state</td><td><code>state</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>fallback-value</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.User → dev.kmapx.it.UserDto <small>(extension · toUserDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>name</td><td><code>firstname</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.Vehicle → dev.kmapx.it.VehicleDto <small>(bidirectional · toVehicleDto)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>plateNumber</td><td><code>plate</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>unwrap</td><td>—</td></tr>
+<tr><td>year</td><td><code>year</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+</table>
+<h2>dev.kmapx.it.VehicleDto → dev.kmapx.it.Vehicle <small>(bidirectional · toVehicle)</small></h2>
+<table><tr><th>target</th><th>from</th><th>origin</th><th>shape</th><th>ref</th></tr>
+<tr><td>plate</td><td><code>plateNumber</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>wrap</td><td>—</td></tr>
+<tr><td>year</td><td><code>year</code></td><td><span class="badge IMPLICIT_SAFE">IMPLICIT_SAFE</span></td><td>direct</td><td>—</td></tr>
+</table>
+</body></html>

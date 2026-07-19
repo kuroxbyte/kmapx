@@ -1,0 +1,36 @@
+[versions]
+dokka = "2.1.0"
+# Verificar últimas versiones compatibles antes del primer build:
+# Kotlin/KSP: https://github.com/google/ksp/releases (usar SIEMPRE KSP2)
+kotlin = "2.1.21"
+ksp = "2.1.21-2.0.1"
+kotlinpoet = "2.0.0"
+kctfork = "0.7.0"
+mavenPublish = "0.32.0"  # 0.33+ exige Kotlin 2.2; el proyecto está en 2.1.21
+konsist = "0.17.3"
+junit = "5.11.4"
+# F17: SOLO para tests de frontend-ksp (regla cero: kmapx no arrastra frameworks)
+spring-context = "6.1.14"
+koin = "3.5.6"
+kotlinx-serialization = "1.7.3"
+
+[libraries]
+ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
+kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kctfork-ksp = { module = "dev.zacsweers.kctfork:ksp", version.ref = "kctfork" }
+konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+spring-context = { module = "org.springframework:spring-context", version.ref = "spring-context" }
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+[plugins]
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
