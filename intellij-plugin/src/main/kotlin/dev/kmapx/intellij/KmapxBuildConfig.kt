@@ -18,13 +18,14 @@ import dev.kmapx.core.engine.NullPolicy
  */
 internal object KmapxBuildConfig {
 
-    data class Global(val onNull: NullPolicy?, val stdConverters: Boolean)
+    data class Global(val onNull: NullPolicy?, val stdConverters: Boolean, val useSerialNames: Boolean = false)
 
     fun of(project: Project): Global {
         val texts = filesNamed(project, "gradle.properties") + filesNamed(project, "build.gradle.kts")
         return Global(
             onNull = texts.firstNotNullOfOrNull { onNullIn(it) },
             stdConverters = texts.any { stdConvertersIn(it) },
+            useSerialNames = texts.any { serialNamesIn(it) },
         )
     }
 
@@ -53,4 +54,11 @@ internal object KmapxBuildConfig {
 
     private fun stdConvertersIn(text: String): Boolean =
         PROPERTY_STD.containsMatchIn(text) || DSL_STD.containsMatchIn(text)
+
+    private val PROPERTY_SERIAL = Regex("""kmapx\.useSerialNames\s*=\s*true""")
+    private val DSL_SERIAL =
+        Regex("""kmapx\s*\{[^}]*?useSerialNames(?:\.set\(|\s*=\s*)true""", RegexOption.DOT_MATCHES_ALL)
+
+    private fun serialNamesIn(text: String): Boolean =
+        PROPERTY_SERIAL.containsMatchIn(text) || DSL_SERIAL.containsMatchIn(text)
 }

@@ -13,3 +13,6 @@ out/
 
 # Claude Code (config local de sesión)
 .claude/
+
+# IntelliJ Platform Gradle Plugin (artefactos de build descargados)
+intellij-plugin/.intellijPlatform/

@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>dev.kmapx.intellij</id>
     <name>kmapx</name>
-    <vendor>kmapx</vendor>
+    <vendor url="https://github.com/kuroxbyte/kmapx">kuroxbyte</vendor>
     <description><![CDATA[
         Soporte de IDE para <b>kmapx</b>, el mapper Kotlin-first en compile-time (KSP2):
         <ul>
@@ -16,7 +16,8 @@
             referencias con completado y rename seguro en <code>target=</code>,
             <code>from = "a.b.c"</code> (por segmento), <code>ignore = [...]</code> y
             <code>@MapEntry</code>.</li>
-        <li><b>Intenciones</b>: crear el DTO espejo con su <code>@MapTo</code> en un gesto.</li>
+        <li><b>Intenciones</b>: crear el DTO espejo con su <code>@MapTo</code> en un gesto, y
+            <b>materializar</b> el mapeo como código fuente propio — el "delombok" de kmapx.</li>
         </ul>
     ]]></description>
 
@@ -54,6 +55,11 @@
         <intentionAction>
             <language>kotlin</language>
             <className>dev.kmapx.intellij.CreateMirrorDtoIntention</className>
+            <category>Kotlin</category>
+        </intentionAction>
+        <intentionAction>
+            <language>kotlin</language>
+            <className>dev.kmapx.intellij.MaterializeMappingIntention</className>
             <category>Kotlin</category>
         </intentionAction>
     </extensions>

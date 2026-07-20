@@ -6,12 +6,17 @@ import dev.kmapx.core.diagnostics.MapFieldRules
 import dev.kmapx.core.engine.MappingEngine
 import dev.kmapx.core.engine.NullPolicy
 import dev.kmapx.core.model.MClass
+import dev.kmapx.core.model.MPath
+import dev.kmapx.core.model.MPathSegment
+import dev.kmapx.core.model.MProperty
 import dev.kmapx.core.plan.Emission
 import dev.kmapx.core.plan.MappingPlan
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtTypeReference
 
 /**
  * La resolución de mapeos EN EL EDITOR, compartida por la inspección
@@ -20,8 +25,8 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
  * el índice colaborativo del proyecto ([ProjectMappingIndex]: mapeos declarados y converters)
  * y la config global del build ([KmapxBuildConfig]: `kmapx.onNull`, `kmapx.stdConverters`).
  *
- * Abstenciones (documentadas en cada modo): `useSerialNames` (el adapter no lee `@SerialName`),
- * patch/multi-fuente e `@InverseOf` en contract.
+ * Abstenciones restantes (documentadas en su sitio): patch con `useSerialNames` (resolvePatch
+ * no acepta el flag) y jerarquías sealed sin subtipos visibles.
  */
 internal object EditorMappingResolver {
 
@@ -51,8 +56,7 @@ internal object EditorMappingResolver {
         val index = ProjectMappingIndex.of(project)
 
         return annotations.mapNotNull { annotation ->
-            // Sin @SerialName en el adapter, inspeccionar daría falsos KMX002 — abstención.
-            if (MapFieldPsi.booleanValue(annotation, "useSerialNames")) return@mapNotNull null
+            val useSerialNames = MapFieldPsi.booleanValue(annotation, "useSerialNames") || global.useSerialNames
             val classLiteral = annotation.valueArguments.firstOrNull()
                 ?.getArgumentExpression()?.text?.removeSuffix("::class") ?: return@mapNotNull null
             val targetShort = classLiteral.substringAfterLast('.')
@@ -60,14 +64,21 @@ internal object EditorMappingResolver {
             val functionName = MapFieldPsi.stringValue(annotation, "name")?.takeIf { it.isNotEmpty() }
                 ?: "to$targetShort"
 
+            val targetModel = adapter.translate(target)
+            // Sealed con jerarquía vacía (subtipos en otro archivo): abstención — el motor
+            // marcaría KMX010 en cada subtipo del otro lado, y serían falsos.
+            if (sealedUnresolvable(sourceModel, targetModel)) return@mapNotNull null
+            // La lista `ignore` del @MapTo (sin validar nombres aquí: eso es del build).
+            val configured = targetModel
+                .withFieldConfig(emptyMap(), MapFieldPsi.stringListValue(annotation, "ignore"))
             val plan = MappingEngine().resolve(
                 source = sourceModel,
-                target = adapter.translate(target)
-                    // La lista `ignore` del @MapTo (sin validar nombres aquí: eso es del build).
-                    .withFieldConfig(emptyMap(), MapFieldPsi.stringListValue(annotation, "ignore")),
+                target = configured,
                 emission = Emission.ExtensionFunction(functionName),
                 declaredMappings = index.declaredMappings,
                 converters = index.converters,
+                resolvedPaths = resolvePaths(source, configured, adapter, project),
+                useSerialNames = useSerialNames,
                 // Mapeo primero, GLOBAL del build después (v0.6: la salvedad cerrada).
                 nullPolicies = listOfNotNull(
                     MapFieldRules.levelPolicyFor(MapFieldPsi.enumEntryText(annotation, "onNull")),
@@ -79,6 +90,53 @@ internal object EditorMappingResolver {
         }
     }
 
+    data class ResolvedBiMapTo(
+        val annotation: KtAnnotationEntry,
+        val target: KtClassOrObject,
+        /** Diagnósticos de la IDA + las asimetrías KMX028 de la validación bidireccional. */
+        val diagnostics: List<dev.kmapx.core.diagnostics.Diagnostic>,
+    )
+
+    /** Los `@BiMapTo` de una clase: ida y vuelta con el `resolveBidirectional` REAL del motor. */
+    fun biMapTos(source: KtClassOrObject): List<ResolvedBiMapTo> {
+        val project = source.project
+        val annotations = source.annotationEntries.filter { it.shortName?.asString() == "BiMapTo" }
+        if (annotations.isEmpty()) return emptyList()
+
+        val adapter = PsiAdapter(project)
+        val sourceModel = adapter.translate(source)
+        val sourceShort = source.name ?: return emptyList()
+        val global = KmapxBuildConfig.of(project)
+        val index = ProjectMappingIndex.of(project)
+
+        return annotations.mapNotNull { annotation ->
+            val useSerialNames = MapFieldPsi.booleanValue(annotation, "useSerialNames") || global.useSerialNames
+            val classLiteral = annotation.valueArguments.firstOrNull()
+                ?.getArgumentExpression()?.text?.removeSuffix("::class") ?: return@mapNotNull null
+            val targetShort = classLiteral.substringAfterLast('.')
+            val target = MapFieldPsi.ownerClass(project, targetShort) ?: return@mapNotNull null
+            val targetModel = adapter.translate(target)
+                .withFieldConfig(emptyMap(), MapFieldPsi.stringListValue(annotation, "ignore"))
+            if (sealedUnresolvable(sourceModel, targetModel)) return@mapNotNull null
+
+            val bi = MappingEngine().resolveBidirectional(
+                a = sourceModel,
+                b = targetModel,
+                forwardEmission = Emission.ExtensionFunction("to$targetShort"),
+                reverseEmission = Emission.ExtensionFunction("to$sourceShort"),
+                declaredMappings = index.declaredMappings,
+                converters = index.converters,
+                useSerialNames = useSerialNames,
+                nullPolicies = listOfNotNull(
+                    MapFieldRules.levelPolicyFor(MapFieldPsi.enumEntryText(annotation, "onNull")),
+                    global.onNull,
+                ),
+                stdConverters = MapFieldPsi.booleanValue(annotation, "stdConverters") || global.stdConverters,
+            )
+            ResolvedBiMapTo(annotation, target, bi.forward.diagnostics + bi.diagnostics)
+        }
+    }
+
     /** Los planes de los métodos de MAPEO simple de una interfaz `@Mapper` (modo contract). */
     fun mapperMethods(mapper: KtClassOrObject): List<ResolvedMethod> {
         if (mapper !is KtClass || !mapper.isInterface()) return emptyList()
@@ -87,15 +145,11 @@ internal object EditorMappingResolver {
         val project = mapper.project
         val profileAnn = profileAnnotationOf(mapper, mapperAnn)
 
-        // Misma abstención que en embedded, en cualquiera de las dos sedes de config.
-        if (MapFieldPsi.booleanValue(mapperAnn, "useSerialNames") ||
-            profileAnn?.let { MapFieldPsi.booleanValue(it, "useSerialNames") } == true
-        ) {
-            return emptyList()
-        }
-
         val global = KmapxBuildConfig.of(project)
         val index = ProjectMappingIndex.of(project)
+        val useSerialNames = global.useSerialNames ||
+            MapFieldPsi.booleanValue(mapperAnn, "useSerialNames") ||
+            profileAnn?.let { MapFieldPsi.booleanValue(it, "useSerialNames") } == true
 
         // Los niveles de la cascada, EN ORDEN — mapper > profile > global.
         val nullPolicies: List<NullPolicy> = listOfNotNull(
@@ -111,17 +165,23 @@ internal object EditorMappingResolver {
 
         val adapter = PsiAdapter(project)
         return mapper.declarations.filterIsInstance<KtNamedFunction>().mapNotNull { method ->
-            // Solo la forma de MAPEO simple: abstracta, 1 parámetro, sin @InverseOf. Patch,
-            // multi-fuente y colecciones quedan para el build.
+            // Formas de MAPEO (simple o multi-fuente): abstracta, sin @InverseOf, y que no sea
+            // ni patch ni colección (esas van por mapperShapeIssues).
             if (method.hasBody()) return@mapNotNull null
             if (method.annotationEntries.any { it.shortName?.asString() == "InverseOf" }) return@mapNotNull null
-            val param = method.valueParameters.singleOrNull() ?: return@mapNotNull null
+            if (isPatchShape(method) || isCollectionShape(method)) return@mapNotNull null
+            val param = method.valueParameters.firstOrNull() ?: return@mapNotNull null
             val sourceName = param.typeReference?.text?.substringBefore('<')?.removeSuffix("?")
                 ?: return@mapNotNull null
             val targetName = method.typeReference?.text?.substringBefore('<')?.removeSuffix("?")
                 ?: return@mapNotNull null
             val sourceClass = MapFieldPsi.ownerClass(project, sourceName) ?: return@mapNotNull null
             val targetClass = MapFieldPsi.ownerClass(project, targetName) ?: return@mapNotNull null
+            // Multi-fuente: los parámetros extra son fuentes suplementarias que matchean por
+            // NOMBRE — el mismo tratamiento que MapperMethods en el build.
+            val supplementary = method.valueParameters.drop(1).mapNotNull { extra ->
+                extra.name?.let { n -> MProperty(n, adapter.typeOf(extra.typeReference)) }
+            }
 
             // La config POR CAMPO declarada en el método: `@MapField(target = "x", ...)`.
             val methodConfig = method.annotationEntries
@@ -132,13 +192,21 @@ internal object EditorMappingResolver {
                 }
                 .toMap()
 
+            val sourceModel = adapter.translate(sourceClass)
+                .let { if (supplementary.isEmpty()) it else it.copy(properties = it.properties + supplementary) }
+            val targetModel = adapter.translate(targetClass)
+            if (sealedUnresolvable(sourceModel, targetModel)) return@mapNotNull null
+            val configured = targetModel.withFieldConfig(methodConfig, levelIgnore)
             val plan = MappingEngine().resolve(
-                source = adapter.translate(sourceClass),
-                target = adapter.translate(targetClass).withFieldConfig(methodConfig, levelIgnore),
+                source = sourceModel,
+                target = configured,
                 emission = Emission.ExtensionFunction(method.name ?: "preview"),
                 declaredMappings = index.declaredMappings,
                 converters = index.converters,
+                resolvedPaths = resolvePaths(sourceClass, configured, adapter, project),
+                useSerialNames = useSerialNames,
                 nullPolicies = nullPolicies,
+                allowInjectedConverters = true,
                 stdConverters = stdConverters,
             )
             ResolvedMethod(method, sourceClass, targetClass, plan)
@@ -187,10 +255,17 @@ internal object EditorMappingResolver {
             val location = MLocation(mapperQn, method.name)
             val inverseAnn = method.annotationEntries.firstOrNull { it.shortName?.asString() == "InverseOf" }
             when {
-                inverseAnn != null ->
-                    inverseIssue(method, inverseAnn, abstractMethods)?.let {
-                        issues += ShapeIssue(method, Diagnostics.invalidInverse(location, it))
+                inverseAnn != null -> {
+                    val (forward, error) = inverseForward(method, inverseAnn, abstractMethods)
+                    when {
+                        error != null ->
+                            issues += ShapeIssue(method, Diagnostics.invalidInverse(location, error))
+                        forward != null ->
+                            // Forma válida: la INVERTIBILIDAD real (KMX028) con el motor.
+                            issues += inverseAsymmetries(mapperAnn, profileAnn, method, forward, index, adapter, project)
+                                .map { ShapeIssue(method, it) }
                     }
+                }
                 isCollectionShape(method) ->
                     issues += collectionIssues(method, location, abstractMethods, index, project)
                 isPatchShape(method) ->
@@ -310,7 +385,89 @@ internal object EditorMappingResolver {
             .map { ShapeIssue(method, it) }
     }
 
-    /** Las validaciones LOCALES de `@InverseOf` (espejo de `InverseMethodResolver`). */
+    /**
+     * Las validaciones LOCALES de `@InverseOf` (espejo de `InverseMethodResolver`): devuelve el
+     * método FORWARD si la forma es válida, o el detalle del error si no.
+     */
+    private fun inverseForward(
+        method: KtNamedFunction,
+        annotation: KtAnnotationEntry,
+        abstractMethods: List<KtNamedFunction>,
+    ): Pair<KtNamedFunction?, String?> {
+        val error = inverseIssue(method, annotation, abstractMethods)
+        if (error != null) return null to error
+        return resolvedForward(method, annotation, abstractMethods) to null
+    }
+
+    private fun resolvedForward(
+        method: KtNamedFunction,
+        annotation: KtAnnotationEntry,
+        abstractMethods: List<KtNamedFunction>,
+    ): KtNamedFunction? {
+        val paramShort = shortOf(method.valueParameters.firstOrNull()?.typeReference?.text)
+        val returnShort = shortOf(method.typeReference?.text)
+        val forwardName = (annotation.valueArguments.firstOrNull() as? org.jetbrains.kotlin.psi.KtValueArgument)
+            ?.getArgumentExpression()?.let { it as? org.jetbrains.kotlin.psi.KtStringTemplateExpression }
+            ?.entries?.singleOrNull()?.text.orEmpty()
+        return if (forwardName.isNotEmpty()) {
+            abstractMethods.firstOrNull { it.name == forwardName }
+        } else {
+            abstractMethods.singleOrNull { fn ->
+                fn !== method && fn.valueParameters.size == 1 &&
+                    shortOf(fn.valueParameters[0].typeReference?.text) == returnShort &&
+                    shortOf(fn.typeReference?.text) == paramShort
+            }
+        }
+    }
+
+    /** Las asimetrías REALES del par (KMX028): el `resolveBidirectional` del motor. */
+    private fun inverseAsymmetries(
+        mapperAnn: KtAnnotationEntry,
+        profileAnn: KtAnnotationEntry?,
+        inverse: KtNamedFunction,
+        forward: KtNamedFunction,
+        index: ProjectMappingIndex.Snapshot,
+        adapter: PsiAdapter,
+        project: com.intellij.openapi.project.Project,
+    ): List<dev.kmapx.core.diagnostics.Diagnostic> {
+        val sourceShort = shortOf(forward.valueParameters.firstOrNull()?.typeReference?.text) ?: return emptyList()
+        val targetShort = shortOf(forward.typeReference?.text) ?: return emptyList()
+        val sourceClass = MapFieldPsi.ownerClass(project, sourceShort) ?: return emptyList()
+        val targetClass = MapFieldPsi.ownerClass(project, targetShort) ?: return emptyList()
+        val global = KmapxBuildConfig.of(project)
+        val nullPolicies = listOfNotNull(
+            MapFieldRules.levelPolicyFor(MapFieldPsi.enumEntryText(mapperAnn, "onNull")),
+            profileAnn?.let { MapFieldRules.levelPolicyFor(MapFieldPsi.enumEntryText(it, "onNull")) },
+            global.onNull,
+        )
+        val levelIgnore = MapFieldPsi.stringListValue(mapperAnn, "ignore") +
+            (profileAnn?.let { MapFieldPsi.stringListValue(it, "ignore") } ?: emptySet())
+        val methodConfig = forward.annotationEntries
+            .filter { it.shortName?.asString() == "MapField" }
+            .mapNotNull { entry ->
+                MapFieldPsi.stringValue(entry, "target")?.takeIf { it.isNotEmpty() }
+                    ?.let { it to MapFieldPsi.aspectsOf(entry) }
+            }
+            .toMap()
+
+        val a = adapter.translate(sourceClass)
+        val b = adapter.translate(targetClass).withFieldConfig(methodConfig, levelIgnore)
+        if (sealedUnresolvable(a, b)) return emptyList()
+        val bi = MappingEngine().resolveBidirectional(
+            a = a,
+            b = b,
+            forwardEmission = Emission.ExtensionFunction(forward.name ?: "forward"),
+            reverseEmission = Emission.ExtensionFunction(inverse.name ?: "inverse"),
+            declaredMappings = index.declaredMappings,
+            converters = index.converters,
+            nullPolicies = nullPolicies,
+            stdConverters = global.stdConverters ||
+                MapFieldPsi.booleanValue(mapperAnn, "stdConverters") ||
+                profileAnn?.let { MapFieldPsi.booleanValue(it, "stdConverters") } == true,
+        )
+        return bi.diagnostics.filter { it.code == dev.kmapx.core.diagnostics.DiagnosticCode.KMX028 }
+    }
+
     private fun inverseIssue(
         method: KtNamedFunction,
         annotation: KtAnnotationEntry,
@@ -359,6 +516,108 @@ internal object EditorMappingResolver {
         dev.kmapx.core.diagnostics.DiagnosticCode.KMX007,
     )
 
+    /**
+     * Navegación de rutas `a.b.c` sobre PSI — el espejo editor de `PathNavigator`: por cada
+     * `from` con puntos del TARGET, camina las propiedades del source segmento a segmento.
+     * Segmento inexistente → [MPath.Missing] (did-you-mean del motor); clase INTERMEDIA
+     * irresoluble → la ruta se OMITE del mapa (abstención: mejor callar que inventar).
+     */
+    private fun resolvePaths(
+        sourceClass: KtClassOrObject,
+        target: MClass,
+        adapter: PsiAdapter,
+        project: com.intellij.openapi.project.Project,
+    ): Map<String, MPath> {
+        val dotted = (
+            target.constructors.flatMap { it.params }.mapNotNull { it.mappedFrom } +
+                target.properties.mapNotNull { it.mappedFrom }
+            ).filter { '.' in it }.distinct()
+        if (dotted.isEmpty()) return emptyMap()
+
+        val result = mutableMapOf<String, MPath>()
+        paths@ for (path in dotted) {
+            var owner: KtClassOrObject = sourceClass
+            val parts = path.split('.')
+            val segments = mutableListOf<MPathSegment>()
+            var finalRef: KtTypeReference? = null
+            for ((index, segment) in parts.withIndex()) {
+                val typeRef = memberTypeRef(owner, segment)
+                if (typeRef == null) {
+                    result[path] = MPath.Missing(segment, owner.name ?: "?", MapFieldPsi.addressableNames(owner))
+                    continue@paths
+                }
+                segments += MPathSegment(segment, typeRef.text.trim().endsWith("?"))
+                finalRef = typeRef
+                if (index < parts.lastIndex) {
+                    val nextShort = typeRef.text.substringBefore('<').removeSuffix("?")
+                        .substringAfterLast('.').trim()
+                    owner = MapFieldPsi.ownerClass(project, nextShort) ?: continue@paths
+                }
+            }
+            result[path] = MPath.Resolved(segments, adapter.typeOf(finalRef))
+        }
+        return result
+    }
+
+    /** El tipo de una propiedad direccionable (param val/var del primario o property de cuerpo). */
+    private fun memberTypeRef(owner: KtClassOrObject, name: String): KtTypeReference? =
+        owner.primaryConstructor?.valueParameters
+            ?.firstOrNull { it.name == name && it.hasValOrVar() }?.typeReference
+            ?: owner.declarations.filterIsInstance<KtProperty>()
+                .firstOrNull { it.name == name }?.typeReference
+
+    /** Sealed involucrada con jerarquía SIN subtipos visibles (adapter de mismo-archivo): abstención. */
+    private fun sealedUnresolvable(source: MClass, target: MClass): Boolean {
+        fun isSealed(k: dev.kmapx.core.model.TypeKind) =
+            k == dev.kmapx.core.model.TypeKind.SEALED_CLASS || k == dev.kmapx.core.model.TypeKind.SEALED_INTERFACE
+        val anySealed = isSealed(source.type.kind) || isSealed(target.type.kind)
+        return anySealed &&
+            (
+                (isSealed(source.type.kind) && source.sealedSubtypes.isEmpty()) ||
+                    (isSealed(target.type.kind) && target.sealedSubtypes.isEmpty())
+                )
+    }
+
+    /**
+     * KMX030 en el editor: `componentModel = SPRING/KOIN` sin el framework en el classpath del
+     * módulo — el IDE lo sabe al escribir, no hace falta compilar. Mismos probes que el build.
+     */
+    fun frameworkIssue(mapper: KtClassOrObject): dev.kmapx.core.diagnostics.Diagnostic? {
+        if (mapper !is KtClass || !mapper.isInterface()) return null
+        val mapperAnn = mapper.annotationEntries.firstOrNull { it.shortName?.asString() == "Mapper" }
+            ?: return null
+        val profileAnn = profileAnnotationOf(mapper, mapperAnn)
+        val model = MapFieldPsi.enumEntryText(mapperAnn, "componentModel")?.takeIf { it != "INHERIT" }
+            ?: profileAnn?.let { MapFieldPsi.enumEntryText(it, "componentModel") }?.takeIf { it != "INHERIT" }
+            ?: return null
+        val probe = when (model) {
+            "SPRING" -> "org.springframework.stereotype.Component" to "org.springframework:spring-context"
+            "KOIN" -> "org.koin.core.module.Module" to "io.insert-koin:koin-core"
+            else -> return null
+        }
+        val found = com.intellij.psi.JavaPsiFacade.getInstance(mapper.project)
+            .findClass(probe.first, mapper.resolveScope) != null
+        if (found) return null
+        val pkg = mapper.containingKtFile.packageFqName.asString()
+        val qn = mapper.name?.let { if (pkg.isEmpty()) it else "$pkg.$it" } ?: return null
+        return Diagnostics.frameworkMissing(MLocation(qn), model, probe.second)
+    }
+
+    /** KMX044 en el editor: `config = X::class` donde X existe pero NO es un `@MapperConfig`. */
+    fun configIssue(mapper: KtClassOrObject): dev.kmapx.core.diagnostics.Diagnostic? {
+        if (mapper !is KtClass || !mapper.isInterface()) return null
+        val mapperAnn = mapper.annotationEntries.firstOrNull { it.shortName?.asString() == "Mapper" }
+            ?: return null
+        val short = MapFieldPsi.argument(mapperAnn, "config")?.getArgumentExpression()?.text
+            ?.removeSuffix("::class")?.substringAfterLast('.')?.trim()
+            ?.takeIf { it.isNotEmpty() && it != "Unit" } ?: return null
+        val decl = MapFieldPsi.ownerClass(mapper.project, short) ?: return null // irresoluble: abstención
+        if (decl.annotationEntries.any { it.shortName?.asString() == "MapperConfig" }) return null
+        val pkg = mapper.containingKtFile.packageFqName.asString()
+        val qn = mapper.name?.let { if (pkg.isEmpty()) it else "$pkg.$it" } ?: return null
+        return Diagnostics.invalidMapperConfig(MLocation(qn), short, "the referenced class is not annotated with @MapperConfig")
+    }
+
     /** La `@MapperConfig` del profile referenciado por `config = X::class` (si lo hay). */
     private fun profileAnnotationOf(mapper: KtClass, mapperAnn: KtAnnotationEntry): KtAnnotationEntry? =
         MapFieldPsi.argument(mapperAnn, "config")?.getArgumentExpression()?.text
@@ -383,6 +642,7 @@ internal object EditorMappingResolver {
                         p.copy(
                             strategies = listOfNotNull(cfg?.strategy) + p.strategies,
                             mappedFrom = cfg?.from ?: p.mappedFrom,
+                            useConverter = cfg?.converter ?: p.useConverter,
                             ignored = p.ignored || cfg?.ignored == true || p.name in ignore,
                         )
                     },
@@ -393,6 +653,7 @@ internal object EditorMappingResolver {
                 p.copy(
                     strategies = listOfNotNull(cfg?.strategy) + p.strategies,
                     mappedFrom = cfg?.from ?: p.mappedFrom,
+                    useConverter = cfg?.converter ?: p.useConverter,
                     ignored = p.ignored || cfg?.ignored == true || p.name in ignore,
                 )
             },

@@ -200,4 +200,133 @@ class MapFieldReferenceTest : BasePlatformTestCase() {
             (resolved as? KtParameter)?.name == "name",
         )
     }
+
+    fun `test InverseOf resuelve al metodo forward y el rename actualiza el string`() {
+        myFixture.configureByText(
+            "Mappers.kt",
+            """
+            package a
+            import dev.kmapx.annotations.contract.Mapper
+            import dev.kmapx.annotations.contract.InverseOf
+
+            data class Customer(val name: String)
+            data class CustomerDto(val name: String)
+
+            @Mapper
+            interface M {
+                fun toD<caret>to(c: Customer): CustomerDto
+                @InverseOf("toDto")
+                fun fromDto(d: CustomerDto): Customer
+            }
+            """.trimIndent(),
+        )
+        myFixture.renameElementAtCaret("toView")
+        assertTrue(
+            "el rename debía actualizar el string: ${myFixture.file.text}",
+            "@InverseOf(\"toView\")" in myFixture.file.text,
+        )
+    }
+
+    fun `test InverseOf vacio completa solo los forwards con firma inversa`() {
+        myFixture.configureByText(
+            "Mappers.kt",
+            """
+            package a
+            import dev.kmapx.annotations.contract.Mapper
+            import dev.kmapx.annotations.contract.InverseOf
+
+            data class Customer(val name: String)
+            data class CustomerDto(val name: String)
+            data class Other(val x: Int)
+
+            @Mapper
+            interface M {
+                fun toDto(c: Customer): CustomerDto
+                fun toOther(c: Customer): Other
+                @InverseOf("<caret>")
+                fun fromDto(d: CustomerDto): Customer
+            }
+            """.trimIndent(),
+        )
+        val lookups = myFixture.completeBasic()?.mapNotNull { it.lookupString }.orEmpty()
+        if (lookups.isEmpty()) {
+            // Candidato único: insertado directamente.
+            assertTrue("debía autocompletar toDto: ${myFixture.file.text}", "@InverseOf(\"toDto\")" in myFixture.file.text)
+        } else {
+            assertTrue("toDto es el único con firma inversa: ${'$'}lookups", "toDto" in lookups && "toOther" !in lookups)
+        }
+    }
+
+    fun `test MapEntry completa los entries del enum destino`() {
+        myFixture.configureByText(
+            "Enums.kt",
+            """
+            package a
+            import dev.kmapx.annotations.MapEntry
+            import dev.kmapx.annotations.embedded.MapTo
+
+            enum class ColorDto { RED, CRIMSON, LEGACY }
+
+            @MapTo(ColorDto::class)
+            enum class Color {
+                RED,
+                @MapEntry(target = "CRIM<caret>") DARK_RED,
+            }
+            """.trimIndent(),
+        )
+        val items = myFixture.completeBasic()
+        if (items == null) {
+            // Un único candidato: el IDE lo inserta directamente.
+            assertTrue("debía autocompletar CRIMSON: ${myFixture.file.text}", "\"CRIMSON\"" in myFixture.file.text)
+        } else {
+            val lookups = items.mapNotNull { it.lookupString }
+            assertTrue("esperaba los entries del destino: ${'$'}lookups", "CRIMSON" in lookups)
+        }
+    }
+
+    fun `test el completado funciona con el string VACIO`() {
+        myFixture.configureByText(
+            "Enums.kt",
+            """
+            package a
+            import dev.kmapx.annotations.MapEntry
+            import dev.kmapx.annotations.embedded.MapTo
+
+            enum class ColorDto { RED, CRIMSON, LEGACY }
+
+            @MapTo(ColorDto::class)
+            enum class Color {
+                RED,
+                @MapEntry(target = "<caret>") DARK_RED,
+            }
+            """.trimIndent(),
+        )
+        val lookups = myFixture.completeBasic()?.mapNotNull { it.lookupString }.orEmpty()
+        assertTrue(
+            "el string vacío debía ofrecer los entries: ${'$'}lookups",
+            "CRIMSON" in lookups && "LEGACY" in lookups,
+        )
+    }
+
+    fun `test from vacio completa las propiedades del source`() {
+        myFixture.configureByText(
+            "Mappers.kt",
+            """
+            package a
+            import dev.kmapx.annotations.MapField
+            import dev.kmapx.annotations.contract.Mapper
+
+            data class Customer(val firstName: String, val age: Int)
+            data class CustomerDto(val displayName: String, val age: Int)
+
+            @Mapper
+            interface M {
+                @MapField(target = "displayName", from = "<caret>")
+                fun toDto(c: Customer): CustomerDto
+            }
+            """.trimIndent(),
+        )
+        val lookups = myFixture.completeBasic()?.mapNotNull { it.lookupString }.orEmpty()
+        assertTrue("from vacío debía ofrecer las propiedades del source: ${'$'}lookups", "firstName" in lookups)
+    }
 }

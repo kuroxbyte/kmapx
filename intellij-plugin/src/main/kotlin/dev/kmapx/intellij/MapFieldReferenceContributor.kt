@@ -46,7 +46,9 @@ private class KmapxStringProvider : PsiReferenceProvider() {
 
     override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
         val string = element as? KtStringTemplateExpression ?: return PsiReference.EMPTY_ARRAY
-        if (string.entries.size != 1 || string.hasInterpolation()) return PsiReference.EMPTY_ARRAY
+        // 0 entries = string VACÍO ("") — el momento exacto en que el usuario invoca el
+        // completado; sin la referencia ahí, no habría sugerencias hasta escribir algo.
+        if (string.entries.size > 1 || string.hasInterpolation()) return PsiReference.EMPTY_ARRAY
 
         val argument = string.getParentOfType<KtValueArgument>(strict = true) ?: return PsiReference.EMPTY_ARRAY
         val annotation = argument.getParentOfType<KtAnnotationEntry>(strict = true) ?: return PsiReference.EMPTY_ARRAY
@@ -55,6 +57,7 @@ private class KmapxStringProvider : PsiReferenceProvider() {
             "MapField" -> mapFieldReferences(string, argument, annotation)
             "MapTo", "Mapper" -> ignoreReferences(string, argument, annotation)
             "MapEntry" -> mapEntryReferences(string, annotation)
+            "InverseOf" -> inverseReferences(string, annotation)
             else -> PsiReference.EMPTY_ARRAY
         }
     }
@@ -91,8 +94,9 @@ private class KmapxStringProvider : PsiReferenceProvider() {
         }
         if (ownerTypeNames.isEmpty()) return PsiReference.EMPTY_ARRAY
 
-        // Una referencia POR SEGMENTO de la ruta — cada una navega su tipo dueño.
-        val segments = string.entries.single().text.split('.')
+        // Una referencia POR SEGMENTO de la ruta — cada una navega su tipo dueño
+        // (string vacío = un único segmento vacío: la referencia existe SOLO para completar).
+        val segments = (string.entries.singleOrNull()?.text ?: "").split('.')
         var offset = 1 // dentro de las comillas
         return segments.mapIndexed { index, segment ->
             val range = TextRange(offset, offset + segment.length)
@@ -123,6 +127,21 @@ private class KmapxStringProvider : PsiReferenceProvider() {
             }
         if (targetShortNames.isEmpty()) return PsiReference.EMPTY_ARRAY
         return arrayOf(EnumEntryReference(string, targetShortNames))
+    }
+
+    /**
+     * El string de `@InverseOf("toX")` referencia el método FORWARD del mismo mapper — con la
+     * referencia, ctrl+click navega, el rename del forward actualiza el string, y el completado
+     * ofrece SOLO los candidatos con la firma inversa exacta (el resto sería KMX045).
+     */
+    private fun inverseReferences(
+        string: KtStringTemplateExpression,
+        annotation: KtAnnotationEntry,
+    ): Array<PsiReference> {
+        val method = annotation.getParentOfType<KtNamedFunction>(strict = true) ?: return PsiReference.EMPTY_ARRAY
+        val mapper = method.getParentOfType<KtClassOrObject>(strict = true) ?: return PsiReference.EMPTY_ARRAY
+        if (mapper.annotationEntries.none { it.shortName?.asString() == "Mapper" }) return PsiReference.EMPTY_ARRAY
+        return arrayOf(InverseForwardReference(string))
     }
 
     /** v0.6: los strings de `ignore = [...]` referencian la propiedad del TARGET que excluyen. */
@@ -194,6 +213,48 @@ private class IgnoredFieldReference(
 
     override fun getVariants(): Array<Any> =
         owners().flatMap { MapFieldPsi.addressableNames(it) }.distinct().toTypedArray<Any>()
+}
+
+/** `@InverseOf("toX")` → el método forward del mapper (candidatos: firma inversa exacta). */
+private class InverseForwardReference(
+    element: KtStringTemplateExpression,
+) : PsiReferenceBase<KtStringTemplateExpression>(
+    element,
+    TextRange(1, maxOf(1, element.textLength - 1)),
+) {
+
+    private fun context(): Pair<KtNamedFunction, List<KtNamedFunction>>? {
+        val inverse = element.getParentOfType<KtNamedFunction>(strict = true) ?: return null
+        val mapper = inverse.getParentOfType<KtClassOrObject>(strict = true) ?: return null
+        val abstracts = mapper.declarations.filterIsInstance<KtNamedFunction>().filter { !it.hasBody() }
+        return inverse to abstracts
+    }
+
+    private fun shortOf(text: String?): String? =
+        text?.substringBefore('<')?.removeSuffix("?")?.substringAfterLast('.')?.takeIf { it.isNotEmpty() }
+
+    /** Los forwards VÁLIDOS: firma inversa exacta, ni el propio método ni otro @InverseOf. */
+    private fun candidates(): List<KtNamedFunction> {
+        val (inverse, abstracts) = context() ?: return emptyList()
+        val paramShort = shortOf(inverse.valueParameters.firstOrNull()?.typeReference?.text)
+        val returnShort = shortOf(inverse.typeReference?.text)
+        return abstracts.filter { fn ->
+            fn !== inverse &&
+                fn.annotationEntries.none { it.shortName?.asString() == "InverseOf" } &&
+                fn.valueParameters.size == 1 &&
+                shortOf(fn.valueParameters[0].typeReference?.text) == returnShort &&
+                shortOf(fn.typeReference?.text) == paramShort
+        }
+    }
+
+    override fun resolve(): PsiElement? {
+        val name = element.entries.singleOrNull()?.text ?: return null
+        val (_, abstracts) = context() ?: return null
+        return abstracts.firstOrNull { it.name == name }
+    }
+
+    override fun getVariants(): Array<Any> =
+        candidates().mapNotNull { it.name }.toTypedArray<Any>()
 }
 
 /** v0.7 — el string de `@MapEntry(target=)` → el entry homónimo del enum destino. */

@@ -170,9 +170,9 @@ class ContractMappingInspectionTest : BasePlatformTestCase() {
         assertTrue("no debía marcar nada: ${kmxHighlights()}", kmxHighlights().isEmpty())
     }
 
-    fun `test con useSerialNames la inspeccion de mapeo se abstiene`() {
-        // v0.8: patch e @InverseOf YA se inspeccionan (ContractShapesTest); la abstención que
-        // queda es useSerialNames — el adapter no lee @SerialName y marcaría falsos KMX002.
+    fun `test con useSerialNames la inspeccion sigue activa - el adapter lee SerialName`() {
+        // El adapter puebla serialName desde el PSI: la inspección ya no se abstiene con el
+        // opt-in — el mismo KMX003 que emitiría el build sobre el T?→T.
         myFixture.configureByText(
             "Mapping.kt",
             """
@@ -188,6 +188,6 @@ class ContractMappingInspectionTest : BasePlatformTestCase() {
             }
             """.trimIndent(),
         )
-        assertTrue("no debía inspeccionar el mapeo: ${kmxHighlights()}", kmxHighlights().isEmpty())
+        assertTrue("con el opt-in la inspección sigue activa (KMX003): ${kmxHighlights()}", kmxHighlights().any { "KMX003" in it })
     }
 }

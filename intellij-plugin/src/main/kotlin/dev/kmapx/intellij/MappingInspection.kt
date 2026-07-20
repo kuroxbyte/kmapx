@@ -54,9 +54,34 @@ class MappingInspection : LocalInspectionTool() {
     // ── Modo EMBEDDED: los `@MapTo` de una clase ──────────────────────────────────────────────
 
     private fun checkMapTo(source: KtClassOrObject, holder: ProblemsHolder) {
-        for (resolved in EditorMappingResolver.mapTos(source)) {
+        val resolvedAll = EditorMappingResolver.mapTos(source)
+        // KMX013: dos @MapTo del mismo source cuyo nombre de función generada colisiona.
+        resolvedAll.groupBy { it.functionName }.filter { it.value.size > 1 }.forEach { (name, group) ->
+            val pkg = source.containingKtFile.packageFqName.asString()
+            val qn = source.name?.let { if (pkg.isEmpty()) it else "$pkg.$it" } ?: return@forEach
+            val diagnostic = dev.kmapx.core.diagnostics.Diagnostics.ambiguousMapperName(
+                dev.kmapx.core.diagnostics.MLocation(qn),
+                name,
+                group.map { g ->
+                    val tPkg = g.target.containingKtFile.packageFqName.asString()
+                    g.target.name?.let { if (tPkg.isEmpty()) it else "$tPkg.$it" } ?: "?"
+                },
+            )
+            group.forEach { holder.registerProblem(it.annotation, diagnostic.presentation(), diagnostic.highlight()) }
+        }
+        // `@BiMapTo`: la ida con los códigos seguros + las asimetrías KMX028 del motor.
+        for (bi in EditorMappingResolver.biMapTos(source)) {
+            bi.diagnostics
+                .filter { it.code in SAFE_CODES || it.code == DiagnosticCode.KMX028 }
+                .filterNot { suppressed(it, source, bi.target) }
+                .forEach { diagnostic ->
+                    holder.registerProblem(bi.annotation, diagnostic.presentation(), diagnostic.highlight())
+                }
+        }
+        for (resolved in resolvedAll) {
             resolved.plan.diagnostics
                 .filter { it.code in SAFE_CODES }
+                .filterNot { suppressed(it, source, resolved.target) }
                 .forEach { diagnostic ->
                     val member = diagnostic.location.member
                     val targetParam = member?.let { name ->
@@ -93,6 +118,22 @@ class MappingInspection : LocalInspectionTool() {
     // ── Modo CONTRACT: los métodos de mapeo de una interfaz `@Mapper` (v0.5/v0.6) ─────────────
 
     private fun checkMapper(mapper: KtClassOrObject, holder: ProblemsHolder) {
+        // KMX044: config que no es un profile @MapperConfig.
+        EditorMappingResolver.configIssue(mapper)?.let { diagnostic ->
+            holder.registerProblem(
+                (mapper as? org.jetbrains.kotlin.psi.KtClass)?.nameIdentifier ?: mapper,
+                diagnostic.presentation(),
+                diagnostic.highlight(),
+            )
+        }
+        // KMX030: componentModel sin el framework en el classpath — visible al escribir.
+        EditorMappingResolver.frameworkIssue(mapper)?.let { diagnostic ->
+            holder.registerProblem(
+                (mapper as? org.jetbrains.kotlin.psi.KtClass)?.nameIdentifier ?: mapper,
+                diagnostic.presentation(),
+                diagnostic.highlight(),
+            )
+        }
         // v0.8: las FORMAS no-simples — colecciones (KMX046 con fix), patch (KMX012+campos)
         // e @InverseOf (KMX045, validaciones locales).
         for (issue in EditorMappingResolver.mapperShapeIssues(mapper)) {
@@ -110,6 +151,7 @@ class MappingInspection : LocalInspectionTool() {
             val method = resolved.method
             resolved.plan.diagnostics
                 .filter { it.code in SAFE_CODES }
+                .filterNot { suppressed(it, resolved.sourceClass, resolved.targetClass, method) }
                 .forEach { diagnostic ->
                     val member = diagnostic.location.member
                     val fixes: List<LocalQuickFix> = when {
@@ -210,12 +252,42 @@ class MappingInspection : LocalInspectionTool() {
     private fun KtModifierListOwner.pointer(): SmartPsiElementPointer<KtModifierListOwner> =
         SmartPointerManager.getInstance(project).createSmartPsiElementPointer(this)
 
+    /**
+     * `@SuppressKmapx("KMXnnn")` en el editor — el ESPEJO de la regla del build: silencia el
+     * WARNING (nunca un error) si la anotación vive en el campo señalado o en cualquiera de las
+     * clases del par (source/target) o el método del mapper. Ligeramente más permisivo que el
+     * build (que mira solo el símbolo de la ubicación y su clase): preferimos callar de más en
+     * el editor — el build sigue siendo la autoridad.
+     */
+    private fun suppressed(diagnostic: Diagnostic, vararg owners: org.jetbrains.kotlin.psi.KtAnnotated?): Boolean {
+        if (diagnostic.severity != Severity.WARNING) return false
+        val member = diagnostic.location.member
+        val elements: List<org.jetbrains.kotlin.psi.KtAnnotated> = owners.filterNotNull().flatMap { owner ->
+            listOf(owner) + listOfNotNull(
+                member?.let { m ->
+                    (owner as? KtClassOrObject)?.primaryConstructor?.valueParameters?.firstOrNull { it.name == m }
+                },
+            )
+        }
+        return elements.any { element ->
+            element.annotationEntries.any { entry ->
+                entry.shortName?.asString() == "SuppressKmapx" &&
+                    entry.valueArguments.any { arg ->
+                        arg.getArgumentExpression()?.text?.removeSurrounding("\"") == diagnostic.code.id
+                    }
+            }
+        }
+    }
+
     private companion object {
         /** Los códigos SEGUROS con el estado del editor de v0.6 (ver KDoc de la clase). */
         val SAFE_CODES = setOf(
             DiagnosticCode.KMX002, DiagnosticCode.KMX003,
             DiagnosticCode.KMX004, DiagnosticCode.KMX007, DiagnosticCode.KMX009,
             DiagnosticCode.KMX026, DiagnosticCode.KMX047, DiagnosticCode.KMX023,
+            // Sealed: subtipo source sin par — seguro desde que el adapter puebla las
+            // jerarquías del mismo archivo (con abstención si quedan vacías).
+            DiagnosticCode.KMX010,
         )
         val MAP_FIELD_IMPORTS = listOf("dev.kmapx.annotations.MapField", "dev.kmapx.annotations.OnNull")
     }

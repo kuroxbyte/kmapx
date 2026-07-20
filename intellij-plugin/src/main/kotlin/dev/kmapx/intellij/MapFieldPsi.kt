@@ -98,6 +98,8 @@ internal object MapFieldPsi {
         val from: String?,
         val strategy: dev.kmapx.core.model.MNullStrategy?,
         val ignored: Boolean,
+        /** `converter = X::class` — el paso 0 de la resolución; sin él, KMX004 falsos. */
+        val converter: dev.kmapx.core.model.MQualifiedConverter? = null,
     )
 
     fun aspectsOf(entry: KtAnnotationEntry): FieldAspects {
@@ -106,6 +108,33 @@ internal object MapFieldPsi {
             from = stringValue(entry, "from")?.takeIf { it.isNotEmpty() },
             strategy = MapFieldRules.strategyFor(declaration.onNull, stringValue(entry, "default")),
             ignored = declaration.ignore,
+            converter = qualifiedConverterOf(entry),
+        )
+    }
+
+    /**
+     * El `MQualifiedConverter` del aspecto `converter` — A/B salen de la supertype DIRECTA
+     * `Converts<A, B>` del object/class referenciado (misma lectura que `KspTranslator`, sin
+     * resolve completo: si no implementa `Converts` directamente, A/B quedan null y el motor
+     * emite KMX029/KMX027 — códigos filtrados en el editor, nunca un falso positivo).
+     */
+    fun qualifiedConverterOf(entry: KtAnnotationEntry): dev.kmapx.core.model.MQualifiedConverter? {
+        val text = argument(entry, "converter")?.getArgumentExpression()?.text ?: return null
+        val short = text.removeSuffix("::class").substringAfterLast('.').trim()
+            .takeIf { it.isNotEmpty() && it != "Unit" } ?: return null
+        val project = entry.project
+        val decl = ownerClass(project, short) ?: return null
+        val pkg = decl.containingKtFile.packageFqName.asString()
+        val adapter = PsiAdapter(project)
+        val converts = decl.superTypeListEntries.firstOrNull {
+            it.typeReference?.text?.substringBefore('<')?.trim()?.substringAfterLast('.') == "Converts"
+        }
+        val args = converts?.typeReference?.typeElement?.typeArgumentsAsTypes
+        return dev.kmapx.core.model.MQualifiedConverter(
+            objectQualifiedName = if (pkg.isEmpty()) short else "$pkg.$short",
+            fromType = args?.getOrNull(0)?.let(adapter::typeOf),
+            toType = args?.getOrNull(1)?.let(adapter::typeOf),
+            isObject = decl is org.jetbrains.kotlin.psi.KtObjectDeclaration,
         )
     }
 

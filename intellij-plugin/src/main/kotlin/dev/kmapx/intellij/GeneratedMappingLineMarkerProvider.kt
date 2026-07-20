@@ -3,7 +3,6 @@ package dev.kmapx.intellij
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerInfo
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerProvider
 import com.intellij.codeInsight.navigation.NavigationGutterIconBuilder
-import com.intellij.icons.AllIcons
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
@@ -64,7 +63,7 @@ class GeneratedMappingLineMarkerProvider : RelatedItemLineMarkerProvider() {
             .distinct()
         if (producers.isEmpty()) return
         result.add(
-            NavigationGutterIconBuilder.create(AllIcons.Actions.Back)
+            NavigationGutterIconBuilder.create(KmapxIcons.FromGenerated)
                 .setTargets(producers)
                 .setTooltipText("kmapx: mapeos que producen este tipo")
                 .createLineMarkerInfo(element),
@@ -124,7 +123,7 @@ class GeneratedMappingLineMarkerProvider : RelatedItemLineMarkerProvider() {
         targets: List<PsiElement>,
         tooltip: String,
     ): RelatedItemLineMarkerInfo<*> =
-        NavigationGutterIconBuilder.create(AllIcons.Actions.Forward)
+        NavigationGutterIconBuilder.create(KmapxIcons.ToGenerated)
             .setTargets(targets)
             .setTooltipText(tooltip)
             .createLineMarkerInfo(element)

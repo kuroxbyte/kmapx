@@ -68,11 +68,11 @@ y la intención "crear el DTO espejo con @MapTo".
 
 ## Publicación (preparada, pendiente del hito 0.1.0)
 
-`verifyPlugin` corre contra los IDEs recomendados del rango (CI: `.github/workflows/plugin.yml`);
-la firma y el publish leen `CERTIFICATE_CHAIN`/`PRIVATE_KEY`/`PRIVATE_KEY_PASSWORD` y
-`PUBLISH_TOKEN` del entorno — sin credenciales no se usan.
+`./gradlew -p intellij-plugin verifyPlugin` valida el plugin contra los IDEs recomendados
+del rango de compatibilidad antes de publicarlo al Marketplace.
 
 ## Qué NO hace (todavía) — por diseño
 
-- Multi-fuente del modo contract en la inspección (fuentes suplementarias).
 - Inlay hints de la cascada efectiva (API declarativa aún inestable entre versiones).
+- Patch con `useSerialNames` (el `resolvePatch` del core no acepta el alias): abstención.
+- Materializar interfaces con patch/colecciones/`@InverseOf`/`componentModel` (aborta con hint).
