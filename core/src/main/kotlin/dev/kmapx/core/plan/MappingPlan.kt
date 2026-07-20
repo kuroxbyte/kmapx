@@ -110,7 +110,7 @@ public sealed interface ValueSource {
     ) : ValueSource
 
     /**
-     * Converter calificado por `@UseConverter` — `ShortDate.convert(x)`.
+     * Converter calificado por `@MapField(converter=)` — `ShortDate.convert(x)`.
      * [safeCall]: fuente `A?` → `x?.let(ShortDate::convert)`. Como elemento de colección se emite
      * `ShortDate::convert` (referencia de método) dentro del `map { }`.
      */

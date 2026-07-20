@@ -87,19 +87,19 @@ public enum class DiagnosticCode(public val id: String) {
     /** Enum dispatch: SOURCE entry has no counterpart in the target enum, or @MapEntry points nowhere. */
     KMX026("KMX026"),
 
-    /** @UseConverter: the referenced Converts<A,B> does not match the field's source/target types. */
+    /** `@MapField(converter=)`: the referenced Converts<A,B> does not match the field's source/target types. */
     KMX027("KMX027"),
 
     /** @BiMapTo: the mapping is not invertible — asymmetric field, missing inverse converter, fan-out. */
     KMX028("KMX028"),
 
-    /** @UseConverter: the referenced object does not implement `dev.kmapx.runtime.Converts`. */
+    /** `@MapField(converter=)`: the referenced object does not implement `dev.kmapx.runtime.Converts`. */
     KMX029("KMX029"),
 
     /** componentModel requires a framework that is not on the compile classpath. */
     KMX030("KMX030"),
 
-    /** @UseConverter declared where source and target types are identical: unnecessary (WARNING). */
+    /** `@MapField(converter=)` declared where source and target types are identical: unnecessary (WARNING). */
     KMX031("KMX031"),
 
     /** Per-field config declared both on the field and on the @Mapper method; the method wins (WARNING). */
@@ -108,7 +108,7 @@ public enum class DiagnosticCode(public val id: String) {
     /** @OrEmpty declared on a field that is not a List/Set/Map: no empty collection applies. */
     KMX033("KMX033"),
 
-    /** @UseConverter with an injected (class) converter used in mode A: nowhere to inject. */
+    /** `@MapField(converter=)` with an injected (class) converter used in embedded mode: nowhere to inject. */
     KMX034("KMX034"),
 
     /** Injected converter class is not a @Component but componentModel = SPRING. */
@@ -267,7 +267,7 @@ public object Diagnostics {
         )
 
     /**
-     * KMX027: el `Converts<A,B>` del `@UseConverter` no encaja con el par del campo.
+     * KMX027: el `Converts<A,B>` del aspecto `converter` no encaja con el par del campo.
      * [declared] = A -> B del converter; [required] = source -> target del campo.
      */
     public fun converterTypeMismatch(
@@ -285,7 +285,7 @@ public object Diagnostics {
             fix = "use a converter whose Converts<A, B> matches the field, or remove the converter aspect.",
         )
 
-    /** KMX029: el object referenciado por `@UseConverter` no implementa `Converts`. */
+    /** KMX029: el object referenciado por el aspecto `converter` no implementa `Converts`. */
     public fun notAConverter(target: MLocation, paramName: String, converter: String): Diagnostic =
         Diagnostic(
             code = DiagnosticCode.KMX029,
@@ -295,7 +295,7 @@ public object Diagnostics {
             fix = "reference an object that implements Converts<A, B> for the field's types.",
         )
 
-    /** KMX031: `@UseConverter` sobre un campo cuyo par NO necesita conversión (A == B). */
+    /** KMX031: aspecto `converter` sobre un campo cuyo par NO necesita conversión (A == B). */
     public fun unnecessaryConverter(target: MLocation, paramName: String, converter: String): Diagnostic =
         Diagnostic(
             code = DiagnosticCode.KMX031,
@@ -306,13 +306,13 @@ public object Diagnostics {
             severity = Severity.WARNING,
         )
 
-    /** KMX034: un converter con dependencias (class) se usó en modo A (extension). */
+    /** KMX034: un converter con dependencias (class) se usó en modo embedded (extension). */
     public fun injectedConverterInModeA(target: MLocation, paramName: String, converter: String): Diagnostic =
         Diagnostic(
             code = DiagnosticCode.KMX034,
             location = target.copy(member = paramName),
             message = "injected converter ${converter.substringAfterLast('.')} (a class with " +
-                "dependencies) can only be used from a @Mapper (mode B).",
+                "dependencies) can only be used from a @Mapper (contract mode).",
             fix = "declare the mapping in a @Mapper interface, or make the converter a stateless object.",
         )
 
@@ -570,7 +570,7 @@ public object Diagnostics {
         )
 
     /**
-     * KMX011, modo B: `@MapField(target = "...")` sobre un método `@Mapper`
+     * KMX011, modo contract: `@MapField(target = "...")` sobre un método `@Mapper`
      * nombra un campo que no existe en el tipo de retorno.
      */
     public fun methodTargetMissing(

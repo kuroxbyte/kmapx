@@ -15,7 +15,7 @@ import dev.kmapx.core.plan.ref
 
 /**
  * La CADENA de resolución de un valor — única responsabilidad del `MType` fuente al
- * `MType` target. Orden: nulabilidad primero → `@UseConverter` (paso 0) →
+ * `MType` target. Orden: nulabilidad primero → converter calificado (paso 0) →
  * `@Converter` global → value class → idéntico → colecciones elemento a elemento
  * → mapper declarado. Nada más: KMX007/KMX004 en el fall-through.
  *
@@ -151,7 +151,7 @@ internal class ValueResolver {
             return null
         }
 
-        // PASO 0: `@UseConverter` — override explícito por campo, GANA sobre el
+        // PASO 0: el converter calificado — override explícito por campo, GANA sobre el
         // @Converter global (paso 1) y el mapper declarado (paso 2). Para pares de contenedor
         // aplica al ELEMENTO (resolveElements lo propaga vía resolveSide), no al contenedor.
         param.useConverter?.let { uc ->
@@ -387,7 +387,7 @@ internal class ValueResolver {
         // Las estrategias de nulabilidad del parámetro se propagan SOLO adonde está la violación:
         val strategies =
             if (sourceSide.nullable && !targetSide.nullable) param.strategies else emptyList()
-        // El `@UseConverter` del contenedor aplica al ELEMENTO (`Converts<A,B>` tipa el
+        // El converter calificado del contenedor aplica al ELEMENTO (`Converts<A,B>` tipa el
         // elemento, no la colección). Se propaga a los lados que NO son clave de un Map.
         val useConverter = if (refName == "k") null else param.useConverter
         return resolve(

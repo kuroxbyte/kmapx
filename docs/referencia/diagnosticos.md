@@ -218,7 +218,7 @@ Enum dispatch: SOURCE entry has no counterpart in the target enum, or @MapEntry 
 
 ## KMX027 — ERROR
 
-@UseConverter: the referenced Converts<A,B> does not match the field's source/target types.
+`@MapField(converter=)`: the referenced Converts<A,B> does not match the field's source/target types.
 
 ```
 [KMX027] com.example.PersonDto.startDate converter ShortDate expects LocalDate -> String but field requires Int -> String. Fix: use a converter whose Converts<A, B> matches the field, or remove the converter aspect.
@@ -234,7 +234,7 @@ Enum dispatch: SOURCE entry has no counterpart in the target enum, or @MapEntry 
 
 ## KMX029 — ERROR
 
-@UseConverter: the referenced object does not implement `dev.kmapx.runtime.Converts`.
+`@MapField(converter=)`: the referenced object does not implement `dev.kmapx.runtime.Converts`.
 
 ```
 [KMX029] com.example.PersonDto.startDate @MapField converter NotAConverter does not implement dev.kmapx.runtime.Converts. Fix: reference an object that implements Converts<A, B> for the field's types.
@@ -250,7 +250,7 @@ componentModel requires a framework that is not on the compile classpath.
 
 ## KMX031 — WARNING
 
-@UseConverter declared where source and target types are identical: unnecessary (WARNING).
+`@MapField(converter=)` declared where source and target types are identical: unnecessary (WARNING).
 
 ```
 [KMX031] com.example.PersonDto.name @MapField converter Trim is unnecessary: source and target types are identical. Fix: remove the converter aspect; the value maps directly.
@@ -274,10 +274,10 @@ Per-field config declared both on the field and on the @Mapper method; the metho
 
 ## KMX034 — ERROR
 
-@UseConverter with an injected (class) converter used in mode A: nowhere to inject.
+`@MapField(converter=)` with an injected (class) converter used in embedded mode: nowhere to inject.
 
 ```
-[KMX034] com.example.PersonDto.customerName injected converter CustomerName (a class with dependencies) can only be used from a @Mapper (mode B). Fix: declare the mapping in a @Mapper interface, or make the converter a stateless object.
+[KMX034] com.example.PersonDto.customerName injected converter CustomerName (a class with dependencies) can only be used from a @Mapper (contract mode). Fix: declare the mapping in a @Mapper interface, or make the converter a stateless object.
 ```
 
 ## KMX035 — ERROR

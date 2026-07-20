@@ -86,7 +86,7 @@ public sealed interface MNullStrategy {
 }
 
 /**
- * Converter calificado referenciado por `@UseConverter(Object::class)`.
+ * Converter calificado referenciado por `@MapField(converter = Object::class)`.
  * [objectQualifiedName] es el `object` que implementa `dev.kmapx.runtime.Converts<A,B>`.
  * [fromType]/[toType] son A/B, leídos por el frontend de la supertype `Converts`; AMBOS null
  * cuando el object no implementa `Converts` (→ KMX029). El motor valida el encaje (KMX027).
@@ -116,7 +116,7 @@ public data class MProperty(
     val mappedFrom: String? = null,
     /** `@SerialName("x")` del SOURCE — alias de matching, SOLO con `useSerialNames = true`. */
     val serialName: String? = null,
-    /** `@UseConverter(Object::class)` sobre esta propiedad target. */
+    /** `@MapField(converter = Object::class)` sobre esta propiedad target. */
     val useConverter: MQualifiedConverter? = null,
     /** Excluida deliberadamente — la post-asignación se omite. */
     val ignored: Boolean = false,
@@ -130,7 +130,7 @@ public data class MConstructorParam(
     val strategies: List<MNullStrategy> = emptyList(),
     /** `@MapFrom(from = "...")` — redirige el matching a esa propiedad del source. */
     val mappedFrom: String? = null,
-    /** `@UseConverter(Object::class)` sobre este parámetro target. */
+    /** `@MapField(converter = Object::class)` sobre este parámetro target. */
     val useConverter: MQualifiedConverter? = null,
     /** Excluido deliberadamente — el argumento se OMITE (exige default, KMX042). */
     val ignored: Boolean = false,

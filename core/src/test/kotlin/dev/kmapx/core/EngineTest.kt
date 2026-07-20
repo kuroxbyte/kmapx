@@ -1022,7 +1022,7 @@ class EngineTest {
         assertEquals("it", via.source.name)
     }
 
-    // ── Converters calificados @UseConverter (paso 0) ─────────
+    // ── Converters calificados (paso 0) ───────────────────────
 
     private val localDate = mtype("java.time.LocalDate")
     private fun qConv(obj: String, from: dev.kmapx.core.model.MType?, to: dev.kmapx.core.model.MType?) =
@@ -1039,7 +1039,7 @@ class EngineTest {
         )
 
     @Test
-    fun `@UseConverter escalar emite ViaQualifiedConverter por el object`() {
+    fun `converter calificado escalar emite ViaQualifiedConverter por el object`() {
         val plan = engine.resolve(
             srcOf(localDate),
             targetWithConverter(mtype("kotlin.String"), qConv("fx.ShortDate", localDate, mtype("kotlin.String"))),
@@ -1064,7 +1064,7 @@ class EngineTest {
     }
 
     @Test
-    fun `@UseConverter gana sobre el @Converter global y el mapper declarado`() {
+    fun `converter calificado gana sobre el @Converter global y el mapper declarado`() {
         val plan = engine.resolve(
             srcOf(localDate),
             targetWithConverter(mtype("kotlin.String"), qConv("fx.ShortDate", localDate, mtype("kotlin.String"))),
