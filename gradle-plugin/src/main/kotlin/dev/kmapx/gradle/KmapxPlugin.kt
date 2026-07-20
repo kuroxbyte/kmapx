@@ -62,6 +62,6 @@ public class KmapxPlugin : Plugin<Project> {
 
     public companion object {
         /** Coordenadas de los artefactos kmapx a consumir. Sube con cada release. */
-        public const val KMAPX_VERSION: String = "0.1.0-SNAPSHOT"
+        public const val KMAPX_VERSION: String = "0.2.0-SNAPSHOT"
     }
 }

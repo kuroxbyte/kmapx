@@ -54,8 +54,8 @@ class IncrementalGenerationTest {
             }
             kotlin { jvmToolchain(17) }
             dependencies {
-                implementation("io.github.kuroxbyte:kmapx-annotations:0.1.0-SNAPSHOT")
-                ksp("io.github.kuroxbyte:kmapx-frontend-ksp:0.1.0-SNAPSHOT")
+                implementation("io.github.kuroxbyte:kmapx-annotations:0.2.0-SNAPSHOT")
+                ksp("io.github.kuroxbyte:kmapx-frontend-ksp:0.2.0-SNAPSHOT")
             }
             """.trimIndent(),
         )

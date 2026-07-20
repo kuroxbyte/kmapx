@@ -1,7 +1,9 @@
 # kmapx — Guía de referencia
 
 La guía por TEMAS, al estilo de la reference guide de MapStruct: de cero a todas las
-funcionalidades, en el orden en que las vas a necesitar.
+funcionalidades, en el orden en que las vas a necesitar. Complementa a la
+[guía de patrones](guia-mapeo.md), que explica cómo *pensar* los mapeos (qué estrategia de
+null elegir, cuándo bidireccional, cómo aplanar) — aquí está el *qué hace* cada pieza.
 Los bloques grandes de código salen de [ejemplos-avanzados.md](ejemplos-avanzados.md), que el
 build **compila** — esta documentación no puede quedar por detrás del código sin que un test falle.
 
@@ -26,16 +28,26 @@ build **compila** — esta documentación no puede quedar por detrás del códig
 ## 1. Empezar
 
 ```kotlin
-// build.gradle.kts — la vía corta: el plugin aplica KSP y cablea todo
-plugins { id("io.github.kuroxbyte.kmapx") }
-
-// …o la vía manual, con las coordenadas de Maven Central:
+// build.gradle.kts — aplica KSP y agrega las coordenadas de Maven Central:
+plugins {
+    kotlin("jvm") version "2.1.21"
+    id("com.google.devtools.ksp") version "2.1.21-2.0.1"
+}
 dependencies {
     implementation("io.github.kuroxbyte:kmapx-annotations:0.1.0")
-    implementation("io.github.kuroxbyte:kmapx-runtime:0.1.0")
+    implementation("io.github.kuroxbyte:kmapx-runtime:0.1.0")  // solo para Converts<A,B> / Patch<T>
     ksp("io.github.kuroxbyte:kmapx-frontend-ksp:0.1.0")
 }
 ```
+
+```properties
+# gradle.properties
+ksp.useKSP2=true
+```
+
+> El plugin de Gradle `id("io.github.kuroxbyte.kmapx")` — que aplica KSP y cablea las tres
+> dependencias solo (por target en KMP) — vive en el repo pero **aún no está publicado**;
+> mientras tanto, la vía manual de arriba es la soportada.
 
 ```kotlin
 import dev.kmapx.annotations.embedded.MapTo
@@ -106,8 +118,7 @@ Reglas: una `@MapField` por campo (repetida = KMX037); método gana sobre campo 
 ## 5. Null-safety y la cascada onNull
 
 `T? → T` es **error de compilación** (KMX003) salvo
-salida declarada. La salida se resuelve por CASCADA
-:
+salida declarada. La salida se resuelve por CASCADA — el nivel más específico gana:
 
 ```
 @MapField(onNull=…)  >  @Mapper / @MapTo(onNull=…)  >  @MapperConfig(onNull=…)  >  kmapx.onNull global
@@ -157,7 +168,10 @@ en UNA pasada (`items.map { it.toDto() }`), `Map<K,V>` (clave invariante, valor 
 
 **Implícitos ampliados**: el widening numérico SIN PÉRDIDA es automático (`Int→Long`,
 `Float→Double`, `Byte/Short→Int/Long/Float/Double` — emite `x.toLong()`, elementos de colección
-incluidos), y con `stdConverters = true` (en `@MapTo`/`@Mapper`/`@MapperConfig` o
+incluidos), y con `stdConverters = true` — **solo JVM**: emite `java.util.UUID`,
+`java.time.Instant`, `java.math.BigDecimal`; en targets KMP no-JVM esos tipos no existen y el
+flag no aporta pares (usa kotlinx-datetime + `@Converter` en `commonMain`) — (en
+`@MapTo`/`@Mapper`/`@MapperConfig` o
 `kmapx.stdConverters` global) se suman las conversiones estándar `String↔UUID`,
 `String↔BigDecimal`, `String↔BigInteger`, `String↔Instant` y `Long↔Instant` (epoch millis).
 Un `@Converter` tuyo para el par siempre gana.
@@ -200,8 +214,7 @@ El target debe ser data class (KMX012). Post-función: `after<Método>(target, p
 ## 10. Bidireccional e inversos
 
 La misma inversión del motor en las dos sedes — renombres se voltean solos, un converter exige
-su inverso registrado, y toda asimetría es **KMX028** en compile-time
-:
+su inverso registrado, y toda asimetría es **KMX028** en compile-time:
 
 ```kotlin
 @BiMapTo(WarehouseDto::class)      // embedded: A.toB() Y B.toA() desde UNA declaración
@@ -247,7 +260,7 @@ código. Los WARNING se silencian con `@SuppressKmapx("KMXnnn")`; los errores, n
 
 ```kotlin
 plugins { id("io.github.kuroxbyte.kmapx") }        // JVM y KMP: aplica KSP y cablea todo por target
-
+                                                   // (aún no publicado — ver §1 para la vía manual)
 kmapx {
     onNull.set(OnNull.THROW)       // el nivel GLOBAL de la cascada (§5)
     useSerialNames.set(true)       // @SerialName como alias de matching (aditivo)

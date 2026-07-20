@@ -109,7 +109,26 @@ internal class DeclarationIndex(
                         registry.getOrPut(from to to) { mutableListOf() } += fqn
                     }
                 }
+            // SPI: converters CONTRIBUIDOS por extensiones (ServiceLoader). Regla de seguridad:
+            // solo pares que el usuario NO cubrió — su @Converter siempre gana, y un pack
+            // jamás introduce ambigüedad (KMX009) con el código del proyecto.
+            extensionConverters.forEach { (pair, fqn) ->
+                if (pair !in registry) registry[pair] = mutableListOf(fqn)
+            }
             return registry
+        }
+
+        /** Extensiones del SPI, descubiertas UNA vez por classloader del processor. */
+        @OptIn(dev.kmapx.spi.KmapxExperimentalSpi::class)
+        private val extensionConverters: Map<Pair<String, String>, String> by lazy {
+            java.util.ServiceLoader
+                .load(dev.kmapx.spi.KmapxExtension::class.java, DeclarationIndex::class.java.classLoader)
+                .flatMap { extension ->
+                    extension.contributeConverters().map { (pair, fqn) ->
+                        (pair.sourceQualifiedName to pair.targetQualifiedName) to fqn
+                    }
+                }
+                .toMap()
         }
     }
 }

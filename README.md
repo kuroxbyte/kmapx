@@ -1,7 +1,9 @@
-# kmapx (nombre tentativo)
+# kmapx
 
 Mapper Kotlin-first en compile-time: **todo mapeo inseguro es un error de compilación**.
 Core de dominio puro (hexagonal) + frontend KSP2 + backend KotlinPoet.
+
+**📚 Documentación completa: [kuroxbyte.github.io/kmapx](https://kuroxbyte.github.io/kmapx/)**
 
 ## Estado
 
@@ -168,7 +170,7 @@ corren por target (JVM/JS/Linux en CI Linux; macOS/iOS en el job macOS con
 **27/27 features 🟢** (Fases 0–3). Incluye: enums
 (`@MapEntry`), anidados con detección de ciclos, Map/Array/Result y `Iterable`/`Sequence` como
 fuente, `@BiMapTo` validado, rutas anidadas con nulabilidad por segmento (en ambas sedes),
-converters calificados (`@MapField(converter=)`) —incluidos **beans inyectados en modo B**—,
+converters calificados (`@MapField(converter=)`) —incluidos **beans inyectados en modo contract**—,
 dos sedes de configuración, PATCH set-null con `Patch<T>`, config global en el
 bloque `kmapx { }`, plugin de Gradle `id("io.github.kuroxbyte.kmapx")`, integraciones Spring/Koin/serialization
 ([guía de migración](docs/guia-migracion-mapstruct.md), [patrones de mapeo](docs/guia-mapeo.md)) y

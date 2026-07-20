@@ -9,13 +9,15 @@ plugins {
 subprojects {
     // Coordenadas Maven bajo io.github.kuroxbyte; los paquetes siguen siendo dev.kmapx.*.
     group = "io.github.kuroxbyte"
-    version = "0.1.0-SNAPSHOT"
+    version = "0.2.0-SNAPSHOT"
 }
 
 val publishedModules = mapOf(
     "annotations" to "kmapx annotations (KMP): @MapTo, @Mapper, @MapField and friends",
     "runtime" to "kmapx runtime: the Converts interface (zero framework dependencies)",
     "core" to "kmapx core: the mapping engine (zero compiler dependencies)",
+    "spi" to "kmapx SPI (experimental): processor extension points, discovered via ServiceLoader",
+    "ext-jvm" to "kmapx JVM converter pack: java.time, java.util.UUID, java.math, java.net — add to ksp(...) and implementation(...)",
     "backend-codegen" to "kmapx backend: materializes mapping plans into Kotlin sources",
     "frontend-ksp" to "kmapx KSP2 processor: add with ksp(...) to generate mappers at compile time",
 )
@@ -23,7 +25,7 @@ configure(subprojects.filter { it.name in publishedModules.keys }) {
     apply(plugin = "com.vanniktech.maven.publish")
     extensions.configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
         coordinates("io.github.kuroxbyte", "kmapx-${project.name}", version.toString())
-        publishToMavenCentral()
+        publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
         // La firma SOLO cuando existen las llaves (release): mavenLocal no la exige.
         if (providers.gradleProperty("signingInMemoryKey").isPresent ||
             providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent

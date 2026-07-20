@@ -19,6 +19,8 @@ include(
     ":annotations",
     ":runtime",
     ":core",
+    ":spi",
+    ":ext-jvm",
     ":adapter-reflect",
     ":backend-codegen",
     ":frontend-ksp",

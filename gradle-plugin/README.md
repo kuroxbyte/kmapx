@@ -2,14 +2,18 @@
 
 Reemplaza el cableado manual de KSP + dependencias por una línea.
 
+> **Estado**: el plugin vive en este repo y funciona vía composite build, pero **aún no está
+> publicado** en el Gradle Plugin Portal ni en Maven Central — mientras tanto, usa el cableado
+> manual de abajo.
+
 ## Antes (manual)
 
 ```kotlin
 plugins { id("com.google.devtools.ksp") version "2.1.21-2.0.1" }
 dependencies {
-    implementation("dev.kmapx:annotations:0.1.0")
-    implementation("dev.kmapx:runtime:0.1.0")
-    ksp("dev.kmapx:frontend-ksp:0.1.0")
+    implementation("io.github.kuroxbyte:kmapx-annotations:0.1.0")
+    implementation("io.github.kuroxbyte:kmapx-runtime:0.1.0")
+    ksp("io.github.kuroxbyte:kmapx-frontend-ksp:0.1.0")
     // en KMP: repetir kspJvm(...), kspJs(...), kspLinuxX64(...) por cada target
 }
 ```

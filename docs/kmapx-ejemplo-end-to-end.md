@@ -50,7 +50,7 @@ data class CustomerPatchDto(val name: String?, val nickname: String?)
 
 // ── Declaraciones de mapeo ─────────────────────────────────────────────
 
-// Modo A: extension functions (el default idiomático)
+// Modo embedded: extension functions (el default idiomático)
 @MapTo(AddressDto::class)
 private annotation class AddressMapping   // ilustrativo; en la práctica @MapTo va sobre Address
 
@@ -64,7 +64,7 @@ private annotation class AddressMapping   // ilustrativo; en la práctica @MapTo
 @Converter
 fun instantToIso(value: Instant): String = value.toString()
 
-// Modo B: interfaz + Spring, con post-función explícita
+// Modo contract: interfaz + Spring, con post-función explícita
 @Mapper(componentModel = ComponentModel.SPRING)
 interface CustomerMapper {
     fun toDto(customer: Customer): CustomerDto
@@ -228,7 +228,7 @@ e: [KMX012] CustomerPatcher.kt:2 Patch mapping requires the target to be a data 
 
 ## Qué demuestra este ejemplo (checklist de decisiones)
 
-- Modo A y modo B conviven; la implementación de interfaz **delega en la extension** — una sola lógica generada.
+- Modo embedded y modo contract conviven; la implementación de interfaz **delega en la extension** — una sola lógica generada.
 - El anidado siempre es una **referencia** a una función nombrada, jamás inline.
 - El converter del usuario es una función Kotlin refactorizable, sin `expression = "..."`.
 - `T? → T` solo compila porque hay estrategia (default + opt-in); el default se usa **omitiendo el argumento**.

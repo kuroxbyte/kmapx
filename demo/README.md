@@ -18,8 +18,8 @@ mapeo escrito a mano.
 | `priceCents: Long` → `"$1299.99"` | Converter **calificado** por campo | `@MapField(converter = PriceUsd::class)` |
 | `createdAt: Instant` → ISO | Converter global | `@Converter fun instantToIso` |
 | `priceCents` → campo `price` | Renombrado | `@MapField(from = "priceCents")` |
-| entidad → respuesta / resumen | Modo A, `@MapTo` repetible | sobre `Product` |
-| request → entidad, con `id`/`createdAt` inyectados | Modo B + params suplementarios | `@Mapper interface ProductFactory` |
+| entidad → respuesta / resumen | Modo embedded, `@MapTo` repetible | sobre `Product` |
+| request → entidad, con `id`/`createdAt` inyectados | Modo contract + params suplementarios | `@Mapper interface ProductFactory` |
 | actualización parcial (null = no tocar) | PATCH inmutable por FORMA | `fun apply(target: Product, patch: ProductPatch): Product` en un `@Mapper` |
 
 ## El código que kmapx genera
@@ -37,7 +37,7 @@ public fun Product.toProductResponse(): ProductResponse = ProductResponse(
   tags = tags,
 )
 
-public object ProductFactoryImpl : ProductFactory {          // modo B, dominio limpio
+public object ProductFactoryImpl : ProductFactory {          // modo contract, dominio limpio
   override fun create(request: CreateProductRequest, id: ProductId, createdAt: Instant): Product =
     Product(
       id = id,

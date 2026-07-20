@@ -6,6 +6,7 @@ kotlin { jvmToolchain(17) }
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":spi"))
     // El backend expone GeneratedFile; este módulo NO conoce KotlinPoet (regla Konsist).
     implementation(project(":backend-codegen"))
     // Las anotaciones se leen por nombre calificado (el processor no las necesita en classpath,
