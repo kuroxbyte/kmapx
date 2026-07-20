@@ -7,18 +7,46 @@ Core de dominio puro (hexagonal) + frontend KSP2 + backend KotlinPoet.
 
 ## Estado
 
-Fase 0 (fundaciones) implementada: esqueleto multi-módulo, catálogo de diagnósticos,
-modelo de dominio + motor mínimo + adapter de reflection, harness de compile-testing,
-snapshots y Konsist, CI. Pipeline end-to-end mínimo funcionando: `@MapTo` → extension function.
+**Publicado en Maven Central** (`io.github.kuroxbyte:kmapx-*`, versión `0.1.0`, Apache-2.0).
+Motor completo: dos modos (embedded/contract), converters (globales, calificados, inyectados),
+colecciones, value classes, sealed y enums paralelos, PATCH por forma, bidireccional validado,
+rutas anidadas, profiles con herencia, integraciones Spring/Koin/serialization, reporte de
+cobertura y Kotlin Multiplatform (JVM/Android, JS, WasmJS, Native). Diagnósticos KMX001–KMX047,
+cada uno con factory y contrato verificado.
 
-## Primer build
+En curso (`0.2.0-SNAPSHOT`): SPI de extensión (`kmapx-spi`) y packs de converters (`kmapx-ext-jvm`).
+Ver [CHANGELOG.md](CHANGELOG.md).
+
+## Instalación (JVM)
+
+```kotlin
+// build.gradle.kts
+plugins {
+    kotlin("jvm") version "2.1.21"
+    id("com.google.devtools.ksp") version "2.1.21-2.0.1"
+}
+dependencies {
+    implementation("io.github.kuroxbyte:kmapx-annotations:0.1.0")
+    implementation("io.github.kuroxbyte:kmapx-runtime:0.1.0")   // solo para Converts<A,B> / Patch<T>
+    ksp("io.github.kuroxbyte:kmapx-frontend-ksp:0.1.0")
+}
+```
+
+```properties
+# gradle.properties
+ksp.useKSP2=true
+```
+
+Para Kotlin Multiplatform, KSP se declara por target — ver la
+[guía multiplataforma](https://kuroxbyte.github.io/kmapx/guia-kmp/).
+
+## Compilar desde el fuente
 
 ```bash
 ./gradlew build
 ```
 
-Requisitos: JDK 17+. Verificar en `gradle/libs.versions.toml` que las versiones de Kotlin/KSP/kctfork
-sean las últimas compatibles entre sí antes del primer build (ver notas en ese archivo).
+Requisitos: JDK 17+.
 
 ## Módulos
 
@@ -27,6 +55,8 @@ sean las últimas compatibles entre sí antes del primer build (ver notas en ese
 | `annotations`        | API pública del usuario. KMP, cero dependencias.                             |
 | `runtime`            | KMP, mínimo: la interfaz `Converts` (solo si se usa el aspecto `converter` de `@MapField`). |
 | `core`               | Modelo (`MType`, `MappingPlan`), motor, diagnósticos. Kotlin puro. |
+| `spi`                | SPI de extensión (experimental): puntos de extensión del processor, vía `ServiceLoader`. |
+| `ext-jvm`            | Pack de converters JVM (`java.time`, `UUID`, `BigDecimal`, `URI`…). Consumidor del SPI. |
 | `adapter-reflect`    | `mclassOf<T>()` para testear el core sin compilador. Solo tests.             |
 | `backend-codegen`    | Materializa `MappingPlan` → `.kt` (KotlinPoet).                              |
 | `frontend-ksp`       | Processor KSP2: traduce símbolos, invoca al motor, emite o reporta KMX.      |
@@ -35,7 +65,7 @@ sean las últimas compatibles entre sí antes del primer build (ver notas en ese
 | `incremental-tests`  | Gradle TestKit: incrementalidad de KSP contra un consumidor real.     |
 | `demo`               | App JVM CRUD que reemplaza a MapStruct (`./gradlew :demo:run`). Ver [demo/README](demo/README.md). |
 | `gradle-plugin`      | Plugin `id("io.github.kuroxbyte.kmapx")`: aplica KSP y cablea todo. Ver [gradle-plugin/README](gradle-plugin/README.md). |
-| `intellij-plugin`    | Plugin de IntelliJ v0: gutter icons → código generado. Build STANDALONE: `./gradlew -p intellij-plugin buildPlugin`. |
+| `intellij-plugin`    | Plugin de IntelliJ: el motor real en el editor (diagnósticos KMX, quick-fixes, navegación, materializar). Build STANDALONE: `./gradlew -p intellij-plugin buildPlugin`. |
 
 ## Documentación
 
@@ -46,7 +76,7 @@ sean las últimas compatibles entre sí antes del primer build (ver notas en ese
 - Sitio: `mkdocs serve` (MkDocs Material; deploy automático a Pages) · API docs: `./gradlew :annotations:dokkaGeneratePublicationHtml`.
 - Desarrollo: regenerar snapshots con `./gradlew :backend-codegen:test -Dkmapx.updateSnapshots=true` y revisar el diff.
 
-## Uso (modo embedded — ex modo A)
+## Uso (modo embedded)
 
 ```kotlin
 @MapTo(PersonDto::class)                      // genera fun Person.toPersonDto(): PersonDto
@@ -63,7 +93,7 @@ Orden determinista: `@MapConstructor` → `@MapFactory` (companion o top-level) 
 primario visible. Ambigüedad → `KMX006`; nada utilizable → `KMX005`. Las `var`s públicas de
 cuerpo se asignan post-construcción vía `.also { }`.
 
-## Modo contract — la interfaz @Mapper (ex modo B)
+## Modo contract — la interfaz @Mapper
 
 ```kotlin
 @Mapper
@@ -165,15 +195,14 @@ El processor es JVM-only (corre en el build). Los tests de runtime viven en `com
 corren por target (JVM/JS/Linux en CI Linux; macOS/iOS en el job macOS con
 `-Pkmapx.ci.apple=true`). `expect class` anotada → `KMX025`.
 
-## Estado
+## Funcionalidades
 
-**27/27 features 🟢** (Fases 0–3). Incluye: enums
-(`@MapEntry`), anidados con detección de ciclos, Map/Array/Result y `Iterable`/`Sequence` como
-fuente, `@BiMapTo` validado, rutas anidadas con nulabilidad por segmento (en ambas sedes),
+Enums (`@MapEntry`), anidados con detección de ciclos, Map/Array/Result y `Iterable`/`Sequence`
+como fuente, `@BiMapTo` validado, rutas anidadas con nulabilidad por segmento (en ambas sedes),
 converters calificados (`@MapField(converter=)`) —incluidos **beans inyectados en modo contract**—,
 dos sedes de configuración, PATCH set-null con `Patch<T>`, config global en el
 bloque `kmapx { }`, plugin de Gradle `id("io.github.kuroxbyte.kmapx")`, integraciones Spring/Koin/serialization
 ([guía de migración](docs/guia-migracion-mapstruct.md), [patrones de mapeo](docs/guia-mapeo.md)) y
-reporte de cobertura. Diagnósticos KMX001–KMX035, todos con factory + contrato.
-Ya hay **demo CRUD** (módulo `demo`, reemplaza MapStruct). Licencia Apache-2.0;
-coordenadas `io.github.kuroxbyte:kmapx-*`.
+reporte de cobertura. Diagnósticos KMX001–KMX047, todos con factory + contrato.
+Hay una **demo CRUD** (módulo `demo`, reemplaza MapStruct) y un
+[playground](https://kuroxbyte.github.io/kmapx/) documentado.
