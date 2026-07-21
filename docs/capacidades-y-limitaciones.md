@@ -55,6 +55,22 @@ object Cents : Converts<Long,String> { ... }                        // calificad
 @Mapper(config = Cfg::class) interface N { ... }                      //   → hereda settings (cascada)
 @InverseOf("toDto") fun fromDto(d: Dto): Entity                        // La vuelta, invertida y validada (KMX028)
 ```
+- **`stdConverters = true`** (`@MapTo`/`@Mapper`/`@MapperConfig` o `kmapx.stdConverters` global):
+  suma las conversiones estándar `String↔UUID/BigDecimal/BigInteger/Instant`, `Long↔Instant`
+  (epoch millis). **Solo JVM** (usa tipos `java.*`).
+
+### Extensibilidad (0.2)
+```kotlin
+// Pack de converters listos — sin escribir ni un @Converter (ver guia-mapeo):
+dependencies {
+    implementation("io.github.kuroxbyte:kmapx-ext-jvm:<v>")   // java.time, UUID, BigDecimal, URI…
+    ksp("io.github.kuroxbyte:kmapx-ext-jvm:<v>")
+}
+// Tu propio pack: implementá KmapxExtension (kmapx-spi) y registralo en META-INF/services.
+```
+- Un `@Converter` **tuyo** para un par siempre gana sobre el del pack; un pack jamás introduce
+  ambigüedad (KMX009) ni suprime un error — solo añade caminos válidos.
+- El SPI (`kmapx-spi`) es **experimental** hasta 1.0 (`@KmapxExperimentalSpi`).
 
 ### Renombrado y aplanado (en ambas sedes: campo y método)
 ```kotlin
@@ -91,6 +107,7 @@ val note: Patch<String?> = Patch.Keep                       // set-null explíci
 | `IntArray`/`LongArray` (arrays primitivos) elemento a elemento | KMX004 (passthrough solo si idéntico) | **(D)** solo `Array<T>`; los primitivos son passthrough. |
 | `Iterable`/`Sequence` → **Set/Array/Result** | KMX004 | **(V1)** solo → `List`/`Collection`/`Iterable`. |
 | Mapeo con `@Mapping(expression = "java(...)")` (strings con código) | — | **(D)** jamás strings con código; usá un `@Converter` (refactor-safe). |
+| **Serializar** un objeto a JSON/XML automáticamente (`Meta → String`) | KMX004 | **(D)** kmapx mapea ESTRUCTURA, no serializa: es específico del tipo (necesita su serializador) y una responsabilidad de tu librería de serialización. Escribí un `@Converter fun (m: Meta): String = Json.encodeToString(m)` — de una línea, explícito y testeable. |
 
 ### Anidados y composición
 | No se puede | Resultado | Por qué |
@@ -145,6 +162,8 @@ val note: Patch<String?> = Patch.Keep                       // set-null explíci
   garantía de "todo mapeo inseguro es error de compilación".
 - **(V1) Alcance de v1:** decisiones de acotar, no de imposibilidad. Pueden crecer con demanda
   (cross-module, sede de método en PATCH, `converter` en PATCH, Sequence→Set, des-aplanar…).
+  Muchas "conversiones que faltan" no esperan a una release: un **pack** (`kmapx-ext-*`) o tu
+  propio `KmapxExtension` (SPI) las añade desde fuera, sin tocar la librería.
 - **(A) Arquitectónico:** límites reales de KSP (no lee lambdas/expresiones; anotaciones sin
   `KProperty`). Cambiarlos implicaría abandonar KSP por un compiler-plugin — otra tecnología.
 
