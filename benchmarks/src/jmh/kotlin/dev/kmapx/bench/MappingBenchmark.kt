@@ -30,4 +30,9 @@ open class MappingBenchmark {
     fun handWritten(bh: Blackhole) {
         bh.consume(HandWritten.map(order))
     }
+
+    @Benchmark
+    fun mapStruct(bh: Blackhole) {
+        bh.consume(MapStructOrderMapper.INSTANCE.toDto(order))
+    }
 }

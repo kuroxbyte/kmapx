@@ -5,7 +5,8 @@ Benchmarks JMH del RUNTIME del mapeo generado. No se publica ni corre en CI (es 
 ## Correr
 
 ```bash
-./gradlew :benchmarks:jmh
+./gradlew :benchmarks:jmh        # los benchmarks (tarda unos minutos)
+./gradlew :benchmarks:run        # sanity: los tres mappers dan el mismo resultado
 ```
 
 ## Modelo
@@ -14,18 +15,26 @@ Benchmarks JMH del RUNTIME del mapeo generado. No se publica ni corre en CI (es 
 (`Customer`/`Address`), colección de 10 elementos (`List<Item>`), enum (`Status`) y converter
 (`Instant → String`, `Long → String`). Ver `src/main/kotlin/.../Model.kt`.
 
-## Resultado (kmapx vs escrito a mano)
+## Resultado
 
-kmapx genera Kotlin directo, sin reflection. El baseline es el MISMO mapeo escrito a mano — el
-techo de rendimiento. Un empate es el resultado esperado y bueno:
+kmapx genera Kotlin directo, sin reflection; MapStruct genera Java directo, sin reflection. El
+baseline escrito a mano es el techo de rendimiento. Los tres producen el MISMO `OrderDto`
+(verificado por `Verify.kt`), así que la comparación es justa:
 
-| Benchmark | Throughput (ops/µs, mayor = mejor) |
+| Mapper | Throughput (ops/µs, mayor = mejor) |
 |---|---|
-| escrito a mano | 0.245 ± 0.004 |
-| **kmapx** | **0.247 ± 0.003** |
+| escrito a mano | 0.248 ± 0.005 |
+| **kmapx** | **0.257 ± 0.003** |
+| MapStruct | 0.250 ± 0.005 |
 
-Dentro del margen de error: **el código generado por kmapx es indistinguible del escrito a
-mano**. La garantía de "todo mapeo inseguro es error de compilación" no cuesta nada en runtime.
+**Los tres están estadísticamente empatados.** kmapx está a la par de MapStruct y del código
+escrito a mano: la garantía de "todo mapeo inseguro es error de compilación", el cero reflection
+y el código navegable **no cuestan nada en runtime**. La diferencia de kmapx no es la velocidad
+—es igual de rápido— sino la seguridad y la ergonomía en compile-time.
 
-_(Números en un equipo concreto; corré `./gradlew :benchmarks:jmh` para los tuyos. La comparación
-vs MapStruct/Konvert/Mappie se añade en iteraciones siguientes.)_
+Nota Kotlin: MapStruct no entiende los value classes de Kotlin (el getter va mangled), así que su
+mapper necesita un método helper para `OrderId`; kmapx los (des)envuelve solo. Ver
+`MapStructMappers.kt` vs `Model.kt`.
+
+_(Números en un equipo concreto; corré `./gradlew :benchmarks:jmh` para los tuyos. Konvert/Mappie
+se añaden en iteraciones siguientes.)_
