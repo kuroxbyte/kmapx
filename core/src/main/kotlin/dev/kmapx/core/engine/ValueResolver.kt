@@ -295,10 +295,14 @@ internal class ValueResolver {
         // La stdlib no es anotable por el usuario: `Int→Long`, `enum→String`… son territorio
         // de @Converter (KMX004), no de "declara el mapeo" (KMX007).
         fun mappable(x: MType) = x.kind in mappableKinds && !x.qualifiedName.startsWith("kotlin.")
-        return if (mappable(s) && mappable(t)) {
-            Diagnostics.noNestedMapping(ctx.targetLocation, paramName, s.simpleName, t.simpleName)
-        } else {
-            Diagnostics.incompatibleTypes(ctx.targetLocation, paramName, s.qualifiedName, t.qualifiedName)
+        return when {
+            mappable(s) && mappable(t) ->
+                Diagnostics.noNestedMapping(ctx.targetLocation, paramName, s.simpleName, t.simpleName)
+            // Cruce de contenedor (ambos son colecciones, distinto contenedor): mensaje específico.
+            isCollection(s) && isCollection(t) ->
+                Diagnostics.containerCross(ctx.targetLocation, paramName, s.qualifiedName, t.qualifiedName)
+            else ->
+                Diagnostics.incompatibleTypes(ctx.targetLocation, paramName, s.qualifiedName, t.qualifiedName)
         }
     }
 

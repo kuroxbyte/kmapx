@@ -502,4 +502,23 @@ class ContainersAndNestedTest {
             """.trimIndent(),
         )
     }
+
+    @Test
+    fun `cruce de contenedor List a Set da un KMX004 con mensaje especifico`() {
+        val result = KspHarness.assertFailsWithError(
+            "KMX004",
+            """
+            package sample
+            import dev.kmapx.annotations.embedded.MapTo
+
+            data class Dto(val tags: Set<String>)
+
+            @MapTo(Dto::class)
+            data class Src(val tags: List<String>)
+            """.trimIndent(),
+        )
+        // El mensaje explica el porqué (dedup) en vez del genérico "cannot convert ... to ...":
+        assertTrue(result.messages.contains("container List to Set"), result.messages)
+        assertTrue(result.messages.contains("drop duplicates"), result.messages)
+    }
 }

@@ -225,6 +225,34 @@ public object Diagnostics {
             fix = "register a @Converter fun ($from) -> $to, or declare a mapping between the types.",
         )
 
+    /**
+     * KMX004 para un CRUCE de contenedor (`List → Set`, `Map → List`…): no es implícito por
+     * diseño (cambiaría la estructura o descartaría datos en silencio). El fix es específico
+     * para que el usuario elija conscientemente.
+     */
+    public fun containerCross(
+        target: MLocation,
+        paramName: String,
+        from: String,
+        to: String,
+    ): Diagnostic {
+        val fromShort = from.substringAfterLast('.')
+        val toShort = to.substringAfterLast('.')
+        val why = when (toShort) {
+            "Set" -> " ($fromShort -> Set would silently drop duplicates)"
+            "Map" -> " (no obvious key to build the Map from)"
+            "List" -> if (fromShort == "Map") " (a Map has no list order)" else ""
+            else -> ""
+        }
+        return Diagnostic(
+            code = DiagnosticCode.KMX004,
+            location = target.copy(member = paramName),
+            message = "cannot convert container $fromShort to $toShort$why.",
+            fix = "the container list is closed by design; map to the same container, " +
+                "or register a @Converter fun ($from) -> $to to do the cross explicitly.",
+        )
+    }
+
     public fun noNestedMapping(target: MLocation, paramName: String, from: String, to: String): Diagnostic =
         Diagnostic(
             code = DiagnosticCode.KMX007,
