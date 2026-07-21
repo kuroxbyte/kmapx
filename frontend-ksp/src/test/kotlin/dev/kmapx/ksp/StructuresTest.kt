@@ -340,6 +340,53 @@ class StructuresTest {
     }
 
     @Test
+    fun `PATCH honra el converter calificado del campo target`() {
+        val result = KspHarness.assertCompiles(
+            """
+            package sample
+            import dev.kmapx.annotations.MapField
+            import dev.kmapx.annotations.contract.Mapper
+            import dev.kmapx.runtime.Converts
+
+            object Cents : Converts<Long, String> { override fun convert(value: Long) = "${'$'}value" }
+
+            data class Product(@MapField(converter = Cents::class) val price: String, val name: String)
+            data class ProductPatch(val price: Long?, val name: String?)
+
+            @Mapper
+            interface ProductPatcher { fun apply(target: Product, patch: ProductPatch): Product }
+            """.trimIndent(),
+        )
+        val generated = result.generatedFiles.first { it.name == "ProductPatcherImpl.kt" }.readText()
+        // El converter calificado se aplica DENTRO del patch (antes se ignoraba en silencio):
+        assertTrue(generated.contains("price = patch.price?.let(Cents::convert) ?: target.price"), generated)
+    }
+
+    @Test
+    fun `PATCH tri-estado honra el converter calificado en el Set(v)`() {
+        val result = KspHarness.assertCompiles(
+            """
+            package sample
+            import dev.kmapx.annotations.MapField
+            import dev.kmapx.annotations.contract.Mapper
+            import dev.kmapx.runtime.Converts
+            import dev.kmapx.runtime.Patch
+
+            object Cents : Converts<Long, String> { override fun convert(value: Long) = "${'$'}value" }
+
+            data class Product(@MapField(converter = Cents::class) val price: String, val name: String)
+            data class ProductPatch(val price: Patch<Long> = Patch.Keep, val name: String?)
+
+            @Mapper
+            interface ProductPatcher { fun apply(target: Product, patch: ProductPatch): Product }
+            """.trimIndent(),
+        )
+        val generated = result.generatedFiles.first { it.name == "ProductPatcherImpl.kt" }.readText()
+        // El converter se aplica al valor del Set dentro del when tri-estado:
+        assertTrue(generated.contains("Cents.convert("), generated)
+    }
+
+    @Test
     fun `PatchMapper - afterApply invocada y su retorno usado`() {
         val result = KspHarness.assertCompiles(
             """

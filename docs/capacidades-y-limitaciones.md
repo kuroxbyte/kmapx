@@ -102,7 +102,7 @@ val note: Patch<String?> = Patch.Keep                       // set-null explíci
 ### Conversiones
 | No se puede | Resultado | Por qué |
 |---|---|---|
-| `Int → Long`, `enum → String`, ensanchamientos numéricos | KMX004 | **(D)** lista CERRADA; nada de conversiones implícitas silenciosas. Usá `@Converter`. |
+| `Long → Int` (narrowing con pérdida), `enum → String` | KMX004 | **(D)** lista CERRADA; nada de conversiones implícitas silenciosas. Usá `@Converter`. El widening SIN pérdida (`Int→Long`, `Float→Double`…) SÍ es automático. |
 | Cruce de contenedor: `List → Set`, `Map → List` | KMX004 | **(D)** la lista de contenedores es cerrada. |
 | `IntArray`/`LongArray` (arrays primitivos) elemento a elemento | KMX004 (passthrough solo si idéntico) | **(D)** solo `Array<T>`; los primitivos son passthrough. |
 | `Iterable`/`Sequence` → **Set/Array/Result** | KMX004 | **(V1)** solo → `List`/`Collection`/`Iterable`. |
@@ -132,7 +132,7 @@ val note: Patch<String?> = Patch.Keep                       // set-null explíci
 | No se puede | Resultado | Por qué |
 |---|---|---|
 | Setear `null` en un PATCH normal (campo `T?`) | null = conservar | **(D)** semántica JSON-Merge-Patch; para borrar usá `Patch<T>` (`Set(null)`). |
-| `converter` calificado u `onNull` de `@MapField` en PATCH | se ignoran | **(V1)** `resolvePatch` solo cablea `@Converter` global, value class, rutas y `Patch<T>`. |
+| `onNull = LITERAL/THROW/…` de `@MapField` en PATCH | inaplicable | **(D)** en un PATCH el `null` del patch significa "conservar el target" (no es una violación `T?→T`), así que la estrategia no tiene dónde actuar. El `converter` calificado SÍ se aplica (a `Patch<T>` y al fallback). |
 | Config **por método** (`@MapField`) en métodos PATCH | — | **(V1)** el patch no consume la sede de método; su config vive en la clase target. |
 | `afterApply` distinto por método en un patcher multi-método | — | **(V1)** un solo hook `afterApply` por interfaz. |
 | Merge de colecciones (patch de una lista fusiona elementos) | reemplazo completo | **(V1)** null = no tocar; si viene, reemplaza toda la colección. |
@@ -140,7 +140,7 @@ val note: Patch<String?> = Patch.Keep                       // set-null explíci
 ### Enums / bidireccional
 | No se puede | Resultado | Por qué |
 |---|---|---|
-| `@BiMapTo` con entries de enum **renombrados** (`@MapEntry`) | KMX026 en la vuelta | **(D/V1)** los overrides viven de un lado; usá dos `@MapTo` de una vía. |
+| `@BiMapTo` con **fallback de clase** (`@MapEntry` catch-all sobre el enum) | KMX028 | **(D)** un fallback es fan-in (varios entries → uno): la vuelta no sabe a cuál volver. Los overrides POR ENTRY sí se invierten solos. |
 | Entry del source sin par (ni por nombre ni `@MapEntry`) | KMX026 | **(D)** exhaustividad total, sin `else`. |
 
 ### Arquitectura / DX

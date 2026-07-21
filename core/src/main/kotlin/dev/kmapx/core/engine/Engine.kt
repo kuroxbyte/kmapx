@@ -9,6 +9,7 @@ import dev.kmapx.core.model.MClass
 import dev.kmapx.core.model.MConstructorParam
 import dev.kmapx.core.model.MProperty
 import dev.kmapx.core.model.MNullStrategy
+import dev.kmapx.core.model.MQualifiedConverter
 import dev.kmapx.core.model.MType
 import dev.kmapx.core.model.TypeKind
 import dev.kmapx.core.plan.Argument
@@ -401,15 +402,21 @@ public class MappingEngine {
         // el root de cada ruta cuenta como propiedad del patch consumida (no es KMX002).
         // La ruta puede vivir en la PROPERTY o en el PARAM del constructor (el @Map de un
         // `val` de constructor va al parámetro) — se consideran ambos, param primero.
-        data class PathField(val name: String, val from: String, val type: MType, val strategies: List<MNullStrategy>)
+        data class PathField(
+            val name: String,
+            val from: String,
+            val type: MType,
+            val strategies: List<MNullStrategy>,
+            val useConverter: MQualifiedConverter?,
+        )
         val pathFields = buildList {
             target.primaryConstructor?.params
                 ?.filter { it.mappedFrom?.contains('.') == true }
-                ?.forEach { add(PathField(it.name, it.mappedFrom!!, it.type, it.strategies)) }
+                ?.forEach { add(PathField(it.name, it.mappedFrom!!, it.type, it.strategies, it.useConverter)) }
             target.properties
                 .filter { it.mappedFrom?.contains('.') == true }
                 .filter { field -> none { it.name == field.name } }
-                .forEach { add(PathField(it.name, it.mappedFrom!!, it.type, it.strategies)) }
+                .forEach { add(PathField(it.name, it.mappedFrom!!, it.type, it.strategies, it.useConverter)) }
         }
         val pathRoots = mutableSetOf<String>()
         pathFields.forEach { field ->
@@ -419,7 +426,7 @@ public class MappingEngine {
             val paramType = if (fallback) field.type.asNullable() else field.type
             val value = values.resolve(
                 lookup.property,
-                MConstructorParam(field.name, paramType, strategies = field.strategies),
+                MConstructorParam(field.name, paramType, strategies = field.strategies, useConverter = field.useConverter),
                 ctx, lookup.nullableSegment,
             ) ?: return@forEach
             fields += dev.kmapx.core.plan.PatchField(field.name, value, fallback)
@@ -435,6 +442,16 @@ public class MappingEngine {
                 p.mappedFrom?.takeIf { '.' !in it }?.let { put(it, p.name) }
             }
         }
+
+        // Los aspectos por campo (`converter`, `onNull`) de un `val` de constructor viven en el
+        // PARÁMETRO; los de un `var` de cuerpo, en la property. El patch consulta ambas sedes
+        // (param primero) para que `@MapField(converter=)` NO se pierda al parchear.
+        val ctorParamsByName = target.primaryConstructor?.params?.associateBy { it.name } ?: emptyMap()
+        fun converterFor(name: String): MQualifiedConverter? =
+            ctorParamsByName[name]?.useConverter ?: target.properties.firstOrNull { it.name == name }?.useConverter
+        fun strategiesFor(name: String): List<MNullStrategy> =
+            ctorParamsByName[name]?.strategies?.takeIf { it.isNotEmpty() }
+                ?: target.properties.firstOrNull { it.name == name }?.strategies ?: emptyList()
 
         for (property in patch.properties) {
             if (property.name in pathRoots) continue
@@ -455,7 +472,10 @@ public class MappingEngine {
                 val innerType = property.type.typeArgs.singleOrNull() ?: continue
                 val value = values.resolve(
                     property = MProperty("value", innerType),
-                    param = MConstructorParam(field.name, field.type),
+                    param = MConstructorParam(
+                        field.name, field.type,
+                        strategies = strategiesFor(field.name), useConverter = converterFor(field.name),
+                    ),
                     ctx = ctx,
                 ) ?: continue
                 fields += dev.kmapx.core.plan.PatchField(field.name, value, fallbackToTarget = false, tristate = true)
@@ -468,7 +488,10 @@ public class MappingEngine {
             val paramType = if (fallback) field.type.asNullable() else field.type
             val value = values.resolve(
                 property = property,
-                param = MConstructorParam(field.name, paramType),
+                param = MConstructorParam(
+                    field.name, paramType,
+                    strategies = strategiesFor(field.name), useConverter = converterFor(field.name),
+                ),
                 ctx = ctx,
             ) ?: continue
             fields += dev.kmapx.core.plan.PatchField(field.name, value, fallback)
