@@ -13,6 +13,7 @@ junit = "5.11.4"
 spring-context = "6.1.14"
 koin = "3.5.6"
 kotlinx-serialization = "1.7.3"
+kotlinx-datetime = "0.6.1"
 
 [libraries]
 ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
@@ -26,6 +27,7 @@ spring-context = { module = "org.springframework:spring-context", version.ref = 
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 
 [plugins]

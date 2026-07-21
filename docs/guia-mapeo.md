@@ -208,6 +208,9 @@ oficiales, ambos por SPI (se añaden a `implementation(...)` **y** `ksp(...)`):
   direcciones contra `String` (y `Instant↔Long` epoch millis).
 - **`kmapx-ext-serialization`**: `JsonElement ↔ String` (kotlinx.serialization). El JSON
   POR-TIPO (`Meta ↔ String`) sigue siendo un `@Converter` tuyo — específico del tipo, por diseño.
+- **`kmapx-ext-kotlinx-datetime`**: `Instant`/`LocalDate`/`LocalDateTime`/`LocalTime` de
+  kotlinx-datetime ↔ `String` (ISO) y `Instant↔Long` (epoch millis) — el datetime que
+  `stdConverters` (solo JVM) no cubre.
 
 Ejemplo con `kmapx-ext-jvm`:
 

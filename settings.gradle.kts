@@ -22,6 +22,7 @@ include(
     ":spi",
     ":ext-jvm",
     ":ext-serialization",
+    ":ext-kotlinx-datetime",
     ":adapter-reflect",
     ":backend-codegen",
     ":frontend-ksp",

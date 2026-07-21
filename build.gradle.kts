@@ -19,6 +19,7 @@ val publishedModules = mapOf(
     "spi" to "kmapx SPI (experimental): processor extension points, discovered via ServiceLoader",
     "ext-jvm" to "kmapx JVM converter pack: java.time, java.util.UUID, java.math, java.net — add to ksp(...) and implementation(...)",
     "ext-serialization" to "kmapx kotlinx.serialization pack: JsonElement <-> String — add to ksp(...) and implementation(...)",
+    "ext-kotlinx-datetime" to "kmapx kotlinx-datetime pack: Instant/LocalDate/LocalDateTime/LocalTime <-> String (multiplatform datetime)",
     "backend-codegen" to "kmapx backend: materializes mapping plans into Kotlin sources",
     "frontend-ksp" to "kmapx KSP2 processor: add with ksp(...) to generate mappers at compile time",
 )
