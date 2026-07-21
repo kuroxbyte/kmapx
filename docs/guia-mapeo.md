@@ -200,10 +200,16 @@ con aritmética, un tipo de terceros que no puedes anotar).
 
 ### Packs de converters (extensiones)
 
-Los pares de conversión más comunes vienen empaquetados — no hace falta escribirlos. El pack
-`kmapx-ext-jvm` cubre `java.time` (`Instant`, `LocalDate`, `LocalDateTime`, `Duration`),
-`java.util.UUID`, `java.math` (`BigDecimal`, `BigInteger`) y `java.net.URI`, en ambas
-direcciones contra `String` (y `Instant↔Long` epoch millis):
+Los pares de conversión más comunes vienen empaquetados — no hace falta escribirlos. Dos packs
+oficiales, ambos por SPI (se añaden a `implementation(...)` **y** `ksp(...)`):
+
+- **`kmapx-ext-jvm`**: `java.time` (`Instant`, `LocalDate`, `LocalDateTime`, `Duration`),
+  `java.util.UUID`, `java.math` (`BigDecimal`, `BigInteger`) y `java.net.URI`, en ambas
+  direcciones contra `String` (y `Instant↔Long` epoch millis).
+- **`kmapx-ext-serialization`**: `JsonElement ↔ String` (kotlinx.serialization). El JSON
+  POR-TIPO (`Meta ↔ String`) sigue siendo un `@Converter` tuyo — específico del tipo, por diseño.
+
+Ejemplo con `kmapx-ext-jvm`:
 
 ```kotlin
 // build.gradle.kts — el pack va en DOS configuraciones:

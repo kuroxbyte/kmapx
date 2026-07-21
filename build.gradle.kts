@@ -18,6 +18,7 @@ val publishedModules = mapOf(
     "core" to "kmapx core: the mapping engine (zero compiler dependencies)",
     "spi" to "kmapx SPI (experimental): processor extension points, discovered via ServiceLoader",
     "ext-jvm" to "kmapx JVM converter pack: java.time, java.util.UUID, java.math, java.net — add to ksp(...) and implementation(...)",
+    "ext-serialization" to "kmapx kotlinx.serialization pack: JsonElement <-> String — add to ksp(...) and implementation(...)",
     "backend-codegen" to "kmapx backend: materializes mapping plans into Kotlin sources",
     "frontend-ksp" to "kmapx KSP2 processor: add with ksp(...) to generate mappers at compile time",
 )

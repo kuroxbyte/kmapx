@@ -21,6 +21,7 @@ include(
     ":core",
     ":spi",
     ":ext-jvm",
+    ":ext-serialization",
     ":adapter-reflect",
     ":backend-codegen",
     ":frontend-ksp",
