@@ -112,7 +112,7 @@ val note: Patch<String?> = Patch.Keep                       // set-null explíci
 ### Anidados y composición
 | No se puede | Resultado | Por qué |
 |---|---|---|
-| Auto-mapear un anidado cuyo mapper vive en **otro módulo** | KMX007 | **(V1)** `declaredMappings` es por-módulo (KSP solo ve la ronda actual). Declará el par en el consumidor o usá `@Converter`. |
+| Auto-mapear un anidado `@Mapper` (contract) de **otro módulo** | KMX007 | **(V1)** el embedded `@MapTo` cross-module YA se resuelve (marcador `@GeneratedMapping` en el classpath); el contract queda pendiente. Declará el par en el consumidor o usá `@Converter`. |
 | Auto-generar el mapper anidado sin declararlo | KMX007 | **(D)** resolución por referencia: el par tiene que existir (`@MapTo`/`@Converter`). |
 | **Des-aplanar** (construir anidado desde campos planos) | — | **(V1)** las rutas solo LEEN (aplanan), no construyen. |
 | Ciclo de mapeo (`A→B→A`) | KMX008 | **(D)** se detecta y se corta (no recursión infinita). |

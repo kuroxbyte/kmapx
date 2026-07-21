@@ -72,6 +72,7 @@ internal class FrontendContext(
     val koin: KoinModuleWriter,
     val index: DeclarationIndex,
     val config: GlobalConfig,
+    val crossModule: CrossModuleResolver,
 )
 
 /**

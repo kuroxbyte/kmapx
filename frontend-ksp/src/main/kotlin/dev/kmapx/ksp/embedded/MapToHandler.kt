@@ -84,6 +84,8 @@ internal class MapToHandler : DeclarationHandler {
                 stdConverters = decl.stdConverters || ctx.config.stdConverters,
                 // Cascada mapeo > global (el primer no-INHERIT gana).
                 unmapped = decl.unmapped ?: ctx.config.unmapped,
+                // Par anidado de OTRO módulo: descubrir su extensión `@GeneratedMapping` en el classpath.
+                crossModuleMappings = ctx.crossModule::lookup,
             )
             // Los diagnósticos son datos del core; aquí solo se reportan sobre el símbolo de origen
             // (errores y warnings — un plan con solo warnings sigue siendo emitible, KMX018).

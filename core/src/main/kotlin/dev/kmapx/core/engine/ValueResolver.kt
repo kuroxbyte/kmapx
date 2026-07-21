@@ -245,7 +245,9 @@ internal class ValueResolver {
         // Un mapper declarado del par exacto resuelve en CUALQUIER posición de
         // valor, siempre por referencia a la función nombrada; fuente nullable compone con `?.`
         // (la violación de nulabilidad ya se resolvió arriba: s nullable ⇒ t nullable).
-        ctx.declaredMappings[s.qualifiedName to t.qualifiedName]?.let { fn ->
+        val localOrCrossModule = ctx.declaredMappings[s.qualifiedName to t.qualifiedName]
+            ?: ctx.crossModuleMappings(s.qualifiedName, t.qualifiedName)
+        localOrCrossModule?.let { fn ->
             return ValueSource.ViaMapper(
                 ref(property.name), MapperRef.GeneratedExtension(fn), safeCall = s.nullable,
             )

@@ -57,6 +57,8 @@ public class MappingEngine {
         stdConverters: Boolean = false,
         /** Severidad de la omisión (KMX021). */
         unmapped: UnmappedPolicy = UnmappedPolicy.WARN,
+        /** Lookup cross-module de un par anidado no declarado localmente (design doc). */
+        crossModuleMappings: (String, String) -> String? = { _, _ -> null },
     ): MappingPlan {
         val diagnostics = mutableListOf<Diagnostic>()
         val targetLocation = MLocation(target.type.qualifiedName)
@@ -64,6 +66,7 @@ public class MappingEngine {
             targetLocation = targetLocation,
             mappingPair = "${source.type.simpleName} -> ${target.type.simpleName}",
             declaredMappings = declaredMappings,
+            crossModuleMappings = crossModuleMappings,
             converters = converters,
             resolvedPaths = resolvedPaths,
             useSerialNames = useSerialNames,
@@ -83,6 +86,7 @@ public class MappingEngine {
                     target = counterpart,
                     emission = subEmission,
                     declaredMappings = ctx.declaredMappings,
+                    crossModuleMappings = ctx.crossModuleMappings,
                     converters = ctx.converters,
                     // La cascada de políticas aplica también dentro del dispatch sealed.
                     nullPolicies = ctx.nullPolicies,

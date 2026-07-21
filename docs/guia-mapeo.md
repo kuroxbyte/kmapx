@@ -98,6 +98,15 @@ implícita:
 - Los ciclos de declaración (`Person → Address → Person`) se detectan y reportan con el camino
   completo (`KMX008`), en vez de recursión infinita.
 
+### Anidados de otro módulo (cross-module)
+
+Si el par anidado se declaró en **otra biblioteca/módulo** (`@MapTo(AddressDto::class)` sobre
+`Address` en `:domain`), el consumidor **NO necesita redeclararlo**: kmapx descubre la extensión
+generada en el classpath y la llama. Funciona con el modo **embedded** (`@MapTo`); solo requiere
+que la dependencia esté compilada con kmapx (la extensión lleva un marcador interno
+`@GeneratedMapping`). Si por algún motivo no se descubre, los escapes de siempre valen: redeclarar
+el `@MapTo` en el consumidor, o un `@Converter` que delegue en la extensión de la dependencia.
+
 ## Converters: global, calificado o inyectado
 
 - **Global** (`@Converter fun instantToIso(v: Instant): String`): la conversión canónica de un

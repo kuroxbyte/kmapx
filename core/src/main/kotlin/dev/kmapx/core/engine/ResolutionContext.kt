@@ -37,6 +37,12 @@ internal data class Ctx(
     val mappingPair: String,
     /** (sourceQn, targetQn) → función de extension declarada. */
     val declaredMappings: Map<Pair<String, String>, String>,
+    /**
+     * Resolución cross-module (design/cross-module-mapping.md): (sourceQn, targetQn) → FQN de una
+     * extensión generada en OTRO módulo, descubierta por el frontend en el classpath. Se consulta
+     * solo cuando el par NO está en [declaredMappings] local. Default no-op (core puro / tests).
+     */
+    val crossModuleMappings: (String, String) -> String? = { _, _ -> null },
     /** (fromQn, toQn) → FQNs de `@Converter` — lista para detectar KMX009. */
     val converters: Map<Pair<String, String>, List<String>>,
     /** Rutas `a.b.c` pre-NAVEGADAS por el frontend (el motor juzga, no navega). */

@@ -72,6 +72,7 @@ public class KmapxProcessor(
         val koin = KoinModuleWriter(emitter, output)
         val ctx = FrontendContext(
             resolver, translator, engine, emitter, reader, paths, reporter, output, report, koin, index, config,
+            CrossModuleResolver(resolver),
         )
 
         // Dos fases — resolver TODO (los handlers difieren la escritura de modo A/bi vía

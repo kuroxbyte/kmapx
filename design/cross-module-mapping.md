@@ -1,6 +1,8 @@
 # Diseño — Mapeo anidado cross-module
 
-> Documento de diseño interno (no publicado en el sitio). Estado: **propuesta**, sin implementar.
+> Documento de diseño interno (no publicado en el sitio).
+> Estado: **Fase 1 (embedded `@MapTo`) IMPLEMENTADA** — la técnica quedó validada con un test de
+> dos módulos (`CrossModuleTest`). Fase 2 (contract `@Mapper`) pendiente.
 
 ## Problema
 
