@@ -53,16 +53,29 @@ public class PlanEmitter {
             is Construction.SealedDispatch -> {
                 // La función raíz es un `when` exhaustivo SIN else; cada rama no-object
                 // delega en su propia función nombrada.
-                builder.addFunction(sealedRootFunction(plan, construction))
+                builder.addFunction(markGenerated(sealedRootFunction(plan, construction), plan))
                 construction.branches
                     .filter { it.plan.construction !is Construction.ObjectReference }
-                    .forEach { builder.addFunction(extensionFunction(it.plan)) }
+                    .forEach { builder.addFunction(extensionFunction(it.plan)) }  // sub-plan: sin marker
             }
             // When por IGUALDAD de entries — sin else, mismo principio que el dispatch de sealed.
-            is Construction.EnumDispatch -> builder.addFunction(enumDispatchFunction(plan, construction))
-            else -> builder.addFunction(extensionFunction(plan))
+            is Construction.EnumDispatch -> builder.addFunction(markGenerated(enumDispatchFunction(plan, construction), plan))
+            else -> builder.addFunction(markGenerated(extensionFunction(plan), plan))
         }
     }
+
+    /** El marcador `@GeneratedMapping(source, target)` — SOLO en la función top-level del par
+     *  (no en sub-funciones anidadas), para que otro módulo descubra el par en el classpath. */
+    private fun markGenerated(fn: FunSpec, plan: MappingPlan): FunSpec =
+        fn.toBuilder()
+            .addAnnotation(
+                com.squareup.kotlinpoet.AnnotationSpec
+                    .builder(ClassName("dev.kmapx.annotations", "GeneratedMapping"))
+                    .addMember("source = %S", plan.source.qualifiedName)
+                    .addMember("target = %S", plan.target.qualifiedName)
+                    .build(),
+            )
+            .build()
 
     private fun sealedRootFunction(plan: MappingPlan, dispatch: Construction.SealedDispatch): FunSpec {
         val emission = plan.emission

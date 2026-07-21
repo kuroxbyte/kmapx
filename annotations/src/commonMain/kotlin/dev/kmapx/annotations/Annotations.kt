@@ -12,6 +12,17 @@ import kotlin.reflect.KClass
 public annotation class Converter
 
 /**
+ * Marker EMITIDO por kmapx sobre cada extensión de mapeo generada (`@MapTo`/`@BiMapTo`). No lo
+ * escribas tú. Retención BINARY para que el processor de OTRO módulo lo descubra en el classpath
+ * (`getDeclarationsFromPackage`) y resuelva un par anidado cross-module sin redeclararlo.
+ *
+ * @param source qualified name del tipo fuente. @param target qualified name del tipo destino.
+ */
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.BINARY)
+public annotation class GeneratedMapping(val source: String, val target: String)
+
+/**
  * Null-handling strategy for `T? -> T` — ONE aspect, ONE value: declaring two
  * strategies for the same field is structurally impossible.
  */
