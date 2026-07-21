@@ -30,5 +30,6 @@ include(
     ":integration-tests",
     ":incremental-tests",
     ":demo",
+    ":benchmarks",
     ":gradle-plugin",
 )
