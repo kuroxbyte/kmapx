@@ -9,7 +9,7 @@ plugins {
 subprojects {
     // Coordenadas Maven bajo io.github.kuroxbyte; los paquetes siguen siendo dev.kmapx.*.
     group = "io.github.kuroxbyte"
-    version = "0.2.0-SNAPSHOT"
+    version = "0.2.0"
 }
 
 val publishedModules = mapOf(

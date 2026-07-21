@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.kmapx"
-version = "0.2.0-SNAPSHOT"
+version = "0.2.0"
 
 kotlin { jvmToolchain(17) }
 
@@ -27,9 +27,9 @@ dependencies {
 
     // Las reglas de coherencia de @MapField y los mensajes KMX vienen del MISMO
     // core que usa el compilador (composite build): el plugin no duplica ni una regla.
-    implementation("io.github.kuroxbyte:core:0.2.0-SNAPSHOT")
+    implementation("io.github.kuroxbyte:core:0.2.0")
     // v0.6 (propuesta A) — el preview usa el PlanEmitter REAL: lo que se ve es lo que se genera.
-    implementation("io.github.kuroxbyte:backend-codegen:0.2.0-SNAPSHOT")
+    implementation("io.github.kuroxbyte:backend-codegen:0.2.0")
 }
 
 intellijPlatform {
