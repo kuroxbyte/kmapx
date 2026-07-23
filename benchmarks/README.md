@@ -36,5 +36,9 @@ Nota Kotlin: MapStruct no entiende los value classes de Kotlin (el getter va man
 mapper necesita un método helper para `OrderId`; kmapx los (des)envuelve solo. Ver
 `MapStructMappers.kt` vs `Model.kt`.
 
+> **El otro parámetro — velocidad de GENERACIÓN** (más diferenciador que el runtime): ver
+> [`../benchmarks-gen`](../benchmarks-gen). kmapx (KSP) genera ~5x más rápido que MapStruct
+> (kapt), que paga stubs de Java + `javac`.
+
 _(Números en un equipo concreto; corré `./gradlew :benchmarks:jmh` para los tuyos. Konvert/Mappie
 se añaden en iteraciones siguientes.)_

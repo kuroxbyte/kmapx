@@ -31,5 +31,7 @@ include(
     ":incremental-tests",
     ":demo",
     ":benchmarks",
+    ":benchmarks-gen:ksp",
+    ":benchmarks-gen:kapt",
     ":gradle-plugin",
 )
